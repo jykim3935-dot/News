@@ -8,7 +8,9 @@ import { useToast } from "@/components/Toast";
 const CONTENT_TYPE_LABELS: Record<ContentType, string> = {
   news: "📰 뉴스",
   report: "📊 보고서",
-  consulting: "📊 컨설팅",
+  research: "🎓 학술",
+  consulting: "💼 컨설팅",
+  government: "🏛️ 정부정책",
   global: "🌍 글로벌",
   investment: "💰 투자",
   blog: "🔬 블로그",

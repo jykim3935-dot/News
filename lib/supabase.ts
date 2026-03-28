@@ -27,6 +27,8 @@ export const CONTENT_TYPES = [
   "global",
   "investment",
   "blog",
+  "government",
+  "research",
 ] as const;
 export type ContentType = (typeof CONTENT_TYPES)[number];
 
@@ -84,6 +86,10 @@ export interface Article {
   relevance_score: number | null;
   urgency: Urgency | null;
   impact_comment: string | null;
+  deep_summary: string | null;
+  source_description: string | null;
+  key_findings: string[];
+  action_items: string[];
   batch_id: string | null;
   created_at: string;
 }
@@ -105,5 +111,18 @@ export interface PipelineRun {
   completed_at: string | null;
   articles_count: number;
   error: string | null;
+  executive_brief: string | null;
+  trend_summary: string | null;
+  created_at: string;
+}
+
+export interface Trend {
+  id: string;
+  batch_id: string | null;
+  trend_title: string;
+  trend_description: string;
+  related_article_ids: string[];
+  category: string | null;
+  strength: "rising" | "stable" | "emerging";
   created_at: string;
 }

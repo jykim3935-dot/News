@@ -7,7 +7,9 @@ import { CONTENT_TYPES, CATEGORIES } from "@/lib/supabase";
 const CONTENT_TYPE_LABELS: Record<ContentType, string> = {
   news: "뉴스",
   report: "보고서",
+  research: "학술",
   consulting: "컨설팅",
+  government: "정부정책",
   global: "글로벌",
   investment: "투자",
   blog: "블로그",

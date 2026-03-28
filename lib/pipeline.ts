@@ -1,13 +1,17 @@
 import { supabase } from "./supabase";
 import { collectAll } from "./collector";
-import { curateArticles } from "./curator";
+import { curateArticles, deepCurateArticles } from "./curator";
 import { renderNewsletter } from "./newsletter";
 import { sendNewsletter } from "./sender";
+import { generateExecutiveBrief } from "./executive-brief";
+import { detectTrends } from "./trend-detector";
 import type { Article } from "./supabase";
 
 interface PipelineResult {
   batchId: string;
   articlesCount: number;
+  deepCuratedCount: number;
+  trendsCount: number;
   sent: number;
   errors: string[];
   status: "completed" | "failed";
@@ -31,23 +35,48 @@ export async function runPipeline(
   console.log(`[pipeline] Started batch: ${batchId}`);
 
   try {
-    // Step 1: Collect
-    console.log("[pipeline] Step 1: Collecting...");
+    // Step 1: Collect (5 collectors in parallel)
+    console.log("[pipeline] Step 1/7: Collecting (5 collectors)...");
     const collected = await collectAll(batchId);
     console.log(`[pipeline] Collected ${collected.length} articles`);
 
-    // Step 2: Curate
-    console.log("[pipeline] Step 2: Curating...");
+    // Step 2: Basic Curation
+    console.log("[pipeline] Step 2/7: Basic curation...");
     await curateArticles(batchId);
 
-    // Step 3: Render
-    console.log("[pipeline] Step 3: Rendering newsletter...");
+    // Step 3: Deep Curation (score >= 7 only)
+    console.log("[pipeline] Step 3/7: Deep curation (high-score articles)...");
+    await deepCurateArticles(batchId);
+
+    // Fetch curated articles
     const { data: articles } = await supabase
       .from("articles")
       .select("*")
       .eq("batch_id", batchId)
       .order("relevance_score", { ascending: false });
 
+    const allArticles = (articles as Article[]) || [];
+    const deepCount = allArticles.filter((a) => a.deep_summary).length;
+
+    // Step 4: Trend Detection
+    console.log("[pipeline] Step 4/7: Detecting trends...");
+    const { trends, summary: trendSummary } = await detectTrends(allArticles, batchId);
+
+    // Step 5: Executive Brief
+    console.log("[pipeline] Step 5/7: Generating executive brief...");
+    const executiveBrief = await generateExecutiveBrief(allArticles);
+
+    // Save brief + trend summary to pipeline run
+    await supabase
+      .from("pipeline_runs")
+      .update({
+        executive_brief: executiveBrief,
+        trend_summary: trendSummary,
+      })
+      .eq("id", run.id);
+
+    // Step 6: Render Newsletter
+    console.log("[pipeline] Step 6/7: Rendering newsletter...");
     const date = new Date().toLocaleDateString("ko-KR", {
       year: "numeric",
       month: "long",
@@ -55,10 +84,15 @@ export async function runPipeline(
       weekday: "long",
     });
 
-    const html = renderNewsletter((articles as Article[]) || [], date);
+    const html = renderNewsletter({
+      articles: allArticles,
+      date,
+      executiveBrief,
+      trends,
+    });
 
-    // Step 4: Send
-    console.log("[pipeline] Step 4: Sending...");
+    // Step 7: Send
+    console.log("[pipeline] Step 7/7: Sending...");
     const { sent, errors } = await sendNewsletter(html, date, testEmail);
 
     // Update pipeline run
@@ -67,14 +101,16 @@ export async function runPipeline(
       .update({
         status: "completed",
         completed_at: new Date().toISOString(),
-        articles_count: articles?.length || 0,
+        articles_count: allArticles.length,
       })
       .eq("id", run.id);
 
     console.log("[pipeline] Completed successfully");
     return {
       batchId,
-      articlesCount: articles?.length || 0,
+      articlesCount: allArticles.length,
+      deepCuratedCount: deepCount,
+      trendsCount: trends.length,
       sent,
       errors,
       status: "completed",
@@ -96,6 +132,8 @@ export async function runPipeline(
     return {
       batchId,
       articlesCount: 0,
+      deepCuratedCount: 0,
+      trendsCount: 0,
       sent: 0,
       errors: [errorMsg],
       status: "failed",

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
 import { renderNewsletter } from "@/lib/newsletter";
-import type { Article } from "@/lib/supabase";
+import type { Article, Trend } from "@/lib/supabase";
 
 export const dynamic = "force-dynamic";
 
@@ -28,12 +28,22 @@ export async function GET() {
     .eq("batch_id", run.batch_id)
     .order("relevance_score", { ascending: false });
 
+  const { data: trends } = await supabase
+    .from("trends")
+    .select("*")
+    .eq("batch_id", run.batch_id);
+
   const date = new Date(run.completed_at || run.started_at).toLocaleDateString(
     "ko-KR",
     { year: "numeric", month: "long", day: "numeric", weekday: "long" }
   );
 
-  const html = renderNewsletter((articles as Article[]) || [], date);
+  const html = renderNewsletter({
+    articles: (articles as Article[]) || [],
+    date,
+    executiveBrief: run.executive_brief || undefined,
+    trends: (trends as Trend[]) || [],
+  });
 
   return new NextResponse(html, {
     headers: { "Content-Type": "text/html; charset=utf-8" },

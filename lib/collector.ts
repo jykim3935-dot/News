@@ -3,6 +3,8 @@ import type { Article } from "./supabase";
 import { collectViaWebSearch } from "./collector-websearch";
 import { collectViaRSS } from "./collector-rss";
 import { collectViaDart } from "./collector-dart";
+import { collectGovPolicy } from "./collector-gov";
+import { collectResearch } from "./collector-research";
 import crypto from "crypto";
 
 function deduplicateArticles(
@@ -23,19 +25,22 @@ function deduplicateArticles(
 export async function collectAll(
   batchId: string
 ): Promise<Partial<Article>[]> {
-  console.log("[collector] Starting collection...");
+  console.log("[collector] Starting collection (5 collectors)...");
 
-  // Run all collectors in parallel
-  const [webArticles, rssArticles, dartArticles] = await Promise.allSettled([
-    collectViaWebSearch(batchId),
-    collectViaRSS(batchId),
-    collectViaDart(batchId),
-  ]).then((results) =>
-    results.map((r) => (r.status === "fulfilled" ? r.value : []))
-  );
+  // Run all 5 collectors in parallel
+  const [webArticles, rssArticles, dartArticles, govArticles, researchArticles] =
+    await Promise.allSettled([
+      collectViaWebSearch(batchId),
+      collectViaRSS(batchId),
+      collectViaDart(batchId),
+      collectGovPolicy(batchId),
+      collectResearch(batchId),
+    ]).then((results) =>
+      results.map((r) => (r.status === "fulfilled" ? r.value : []))
+    );
 
   console.log(
-    `[collector] Web: ${webArticles.length}, RSS: ${rssArticles.length}, DART: ${dartArticles.length}`
+    `[collector] Web: ${webArticles.length}, RSS: ${rssArticles.length}, DART: ${dartArticles.length}, Gov: ${govArticles.length}, Research: ${researchArticles.length}`
   );
 
   // Combine and deduplicate
@@ -43,6 +48,8 @@ export async function collectAll(
     ...webArticles,
     ...rssArticles,
     ...dartArticles,
+    ...govArticles,
+    ...researchArticles,
   ]);
 
   console.log(`[collector] After dedup: ${allArticles.length} articles`);

@@ -126,3 +126,42 @@ INSERT INTO keyword_groups (group_name, category, content_types, priority, keywo
 ('GPU/인프라 블로그', 'tech', ARRAY['blog'], 2, ARRAY['NVIDIA blog GPU', 'CUDA update', 'GPU orchestration'], true),
 ('AI 에이전트 블로그', 'tech', ARRAY['blog'], 1, ARRAY['MCP server', 'AI agent framework', 'tool use API'], true),
 ('LLM 블로그', 'tech', ARRAY['blog'], 2, ARRAY['Claude update', 'GPT release', 'open source LLM'], true);
+
+-- ============================================
+-- SOURCES: 정부정책 (government) - v2 신규
+-- ============================================
+INSERT INTO sources (name, url, type, content_type, category, enabled, description) VALUES
+('과학기술정보통신부', 'https://msit.go.kr', 'websearch', 'government', 'regulation', true, 'AI 정책, R&D 예산, 디지털 전환'),
+('산업통상자원부', 'https://motie.go.kr', 'websearch', 'government', 'regulation', true, 'AI 산업 지원, 제조 AI'),
+('조달청/나라장터', 'https://g2b.go.kr', 'websearch', 'government', 'regulation', true, '공공 AI 인프라 조달 공고'),
+('국가AI위원회', 'https://ai.go.kr', 'websearch', 'government', 'regulation', true, '국가 AI 전략, 윤리 가이드라인'),
+('NIA AI 정책', 'https://nia.or.kr', 'websearch', 'government', 'regulation', true, 'AI 활용 사례, 디지털뉴딜'),
+('디지털플랫폼정부위원회', 'https://dgovkorea.go.kr', 'websearch', 'government', 'regulation', true, '디지털플랫폼정부 추진 현황');
+
+-- ============================================
+-- SOURCES: 학술/리서치 (research) - v2 신규
+-- ============================================
+INSERT INTO sources (name, url, type, content_type, category, enabled, description) VALUES
+('arXiv CS.DC', 'http://arxiv.org/rss/cs.DC', 'rss', 'research', 'tech', true, '분산컴퓨팅/GPU 스케줄링 논문'),
+('arXiv CS.AI', 'http://arxiv.org/rss/cs.AI', 'rss', 'research', 'tech', true, 'AI 최신 논문'),
+('Papers with Code', 'https://paperswithcode.com', 'websearch', 'research', 'tech', true, '코드 포함 최신 ML 논문'),
+('Semantic Scholar', 'https://www.semanticscholar.org', 'websearch', 'research', 'tech', true, '학술 논문 검색'),
+('MLSys Conference', 'https://mlsys.org', 'websearch', 'research', 'tech', true, 'ML 시스템 학회');
+
+-- ============================================
+-- KEYWORD GROUPS: 정부정책 키워드 - v2 신규
+-- ============================================
+INSERT INTO keyword_groups (group_name, category, content_types, priority, keywords, enabled) VALUES
+('AI 정부정책 핵심', 'regulation', ARRAY['government'], 1, ARRAY['AI기본법', '인공지능기본법', '디지털플랫폼정부법', 'AI 윤리 가이드라인', '국가AI위원회'], true),
+('공공 AI 인프라', 'regulation', ARRAY['government'], 1, ARRAY['공공 AI 인프라', '나라장터 GPU', '공공클라우드 GPU', 'AI 데이터센터 구축', '국가 AI 컴퓨팅 센터'], true),
+('AI 예산/사업', 'regulation', ARRAY['government'], 2, ARRAY['AI 예산', '디지털뉴딜 AI', 'AI 바우처', 'AI 특구', '스마트시티 AI'], true),
+('데이터 정책', 'regulation', ARRAY['government'], 2, ARRAY['데이터기본법', '마이데이터', '공공데이터', '데이터댐'], true);
+
+-- ============================================
+-- KEYWORD GROUPS: 학술 리서치 키워드 - v2 신규
+-- ============================================
+INSERT INTO keyword_groups (group_name, category, content_types, priority, keywords, enabled) VALUES
+('GPU 스케줄링 연구', 'tech', ARRAY['research'], 1, ARRAY['GPU scheduling', 'GPU cluster management', 'multi-tenant GPU', 'GPU sharing', 'GPU memory management'], true),
+('모델 서빙 연구', 'tech', ARRAY['research'], 1, ARRAY['model serving', 'inference optimization', 'vLLM', 'TensorRT-LLM', 'batching optimization'], true),
+('AI 에이전트 연구', 'tech', ARRAY['research'], 1, ARRAY['AI agent', 'tool use', 'function calling', 'multi-agent system', 'agent orchestration'], true),
+('의료 AI 연구', 'tech', ARRAY['research'], 2, ARRAY['medical AI', 'clinical AI diagnosis', 'pathology AI', 'dermatology AI', 'healthcare LLM'], true);
