@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import type { Recipient } from "@/lib/supabase";
+import { useToast } from "@/components/Toast";
 
 export default function RecipientsManager() {
   const [recipients, setRecipients] = useState<Recipient[]>([]);
@@ -10,6 +11,7 @@ export default function RecipientsManager() {
   const [testEmail, setTestEmail] = useState("");
   const [testRunning, setTestRunning] = useState(false);
   const [form, setForm] = useState({ name: "", email: "", role: "" });
+  const { toast } = useToast();
 
   const fetchRecipients = async () => {
     const res = await fetch("/api/recipients");
@@ -56,9 +58,13 @@ export default function RecipientsManager() {
         body: JSON.stringify({ email: testEmail }),
       });
       const data = await res.json();
-      alert(data.status === "completed" ? "테스트 발송 완료!" : `실패: ${data.errors?.join(", ")}`);
+      if (data.status === "completed") {
+        toast("테스트 발송 완료!", "success");
+      } else {
+        toast(`실패: ${data.errors?.join(", ")}`, "error");
+      }
     } catch {
-      alert("테스트 발송 실패");
+      toast("테스트 발송 실패", "error");
     }
     setTestRunning(false);
   };

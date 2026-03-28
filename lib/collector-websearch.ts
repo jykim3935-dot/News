@@ -26,17 +26,16 @@ async function searchByContentType(
   const keywordStr = keywords.join(", ");
 
   try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const webSearchTool = {
+      type: "web_search_20250305" as const,
+      name: "web_search" as const,
+      max_uses: 10,
+    };
     const response = await anthropic.messages.create({
       model: "claude-sonnet-4-20250514",
       max_tokens: 4096,
-      tools: [
-        {
-          type: "web_search_20250305",
-          name: "web_search",
-          max_uses: 10,
-        } as any,
-      ],
+      // @ts-expect-error web_search tool type not yet in SDK types
+      tools: [webSearchTool],
       messages: [
         {
           role: "user",

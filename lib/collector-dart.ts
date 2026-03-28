@@ -1,4 +1,3 @@
-import { supabase } from "./supabase";
 import type { Article } from "./supabase";
 
 const DART_API_BASE = "https://opendart.fss.or.kr/api";

@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import type { Article, ContentType } from "@/lib/supabase";
 import { CONTENT_TYPES } from "@/lib/supabase";
+import { useToast } from "@/components/Toast";
 
 const CONTENT_TYPE_LABELS: Record<ContentType, string> = {
   news: "📰 뉴스",
@@ -35,6 +36,9 @@ export default function NewsTable() {
   const [filter, setFilter] = useState<ContentType | "all">("all");
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [showPreview, setShowPreview] = useState(false);
+  const [sortKey, setSortKey] = useState<"relevance_score" | "urgency" | "content_type">("relevance_score");
+  const [sortAsc, setSortAsc] = useState(false);
+  const { toast } = useToast();
 
   const fetchArticles = async () => {
     setLoading(true);
@@ -59,22 +63,42 @@ export default function NewsTable() {
       const data = await res.json();
       if (data.status === "completed") {
         await fetchArticles();
+        toast(`수집 완료! ${data.articlesCount}건 수집, ${data.sent}건 발송`, "success");
+      } else {
+        toast(`실패: ${data.errors?.join(", ")}`, "error");
       }
-      alert(
-        data.status === "completed"
-          ? `수집 완료! ${data.articlesCount}건 수집, ${data.sent}건 발송`
-          : `실패: ${data.errors?.join(", ")}`
-      );
     } catch {
-      alert("파이프라인 실행 실패");
+      toast("파이프라인 실행 실패", "error");
     }
     setRunning(false);
   };
 
-  const filtered =
+  const handleSort = (key: typeof sortKey) => {
+    if (sortKey === key) {
+      setSortAsc(!sortAsc);
+    } else {
+      setSortKey(key);
+      setSortAsc(false);
+    }
+  };
+
+  const urgencyOrder: Record<string, number> = { red: 3, yellow: 2, green: 1 };
+
+  const filtered = (
     filter === "all"
       ? articles
-      : articles.filter((a) => a.content_type === filter);
+      : articles.filter((a) => a.content_type === filter)
+  ).sort((a, b) => {
+    let cmp = 0;
+    if (sortKey === "relevance_score") {
+      cmp = (a.relevance_score || 0) - (b.relevance_score || 0);
+    } else if (sortKey === "urgency") {
+      cmp = (urgencyOrder[a.urgency || ""] || 0) - (urgencyOrder[b.urgency || ""] || 0);
+    } else if (sortKey === "content_type") {
+      cmp = (a.content_type || "").localeCompare(b.content_type || "");
+    }
+    return sortAsc ? cmp : -cmp;
+  });
 
   // Summary stats
   const total = articles.length;
@@ -170,10 +194,25 @@ export default function NewsTable() {
             <thead>
               <tr className="bg-[#0F172A] border-b-2 border-[#334155]">
                 <th className="px-3 py-2 text-left text-[#64748B] text-xs font-semibold w-8">#</th>
-                <th className="px-3 py-2 text-left text-[#64748B] text-xs font-semibold">긴급도</th>
-                <th className="px-3 py-2 text-left text-[#64748B] text-xs font-semibold">관련도</th>
+                <th
+                  className="px-3 py-2 text-left text-[#64748B] text-xs font-semibold cursor-pointer hover:text-[#94A3B8]"
+                  onClick={() => handleSort("urgency")}
+                >
+                  긴급도 {sortKey === "urgency" ? (sortAsc ? "↑" : "↓") : ""}
+                </th>
+                <th
+                  className="px-3 py-2 text-left text-[#64748B] text-xs font-semibold cursor-pointer hover:text-[#94A3B8]"
+                  onClick={() => handleSort("relevance_score")}
+                >
+                  관련도 {sortKey === "relevance_score" ? (sortAsc ? "↑" : "↓") : ""}
+                </th>
                 <th className="px-3 py-2 text-left text-[#64748B] text-xs font-semibold">카테고리</th>
-                <th className="px-3 py-2 text-left text-[#64748B] text-xs font-semibold">유형</th>
+                <th
+                  className="px-3 py-2 text-left text-[#64748B] text-xs font-semibold cursor-pointer hover:text-[#94A3B8]"
+                  onClick={() => handleSort("content_type")}
+                >
+                  유형 {sortKey === "content_type" ? (sortAsc ? "↑" : "↓") : ""}
+                </th>
                 <th className="px-3 py-2 text-left text-[#64748B] text-xs font-semibold">제목</th>
                 <th className="px-3 py-2 text-left text-[#64748B] text-xs font-semibold">출처</th>
               </tr>

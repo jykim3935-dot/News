@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import type { PipelineRun } from "@/lib/supabase";
+import { useToast } from "@/components/Toast";
 
 const STATUS_STYLES: Record<string, { bg: string; text: string }> = {
   running: { bg: "bg-blue-500/20", text: "text-blue-400" },
@@ -13,6 +14,7 @@ export default function PipelineLogs() {
   const [logs, setLogs] = useState<PipelineRun[]>([]);
   const [loading, setLoading] = useState(true);
   const [running, setRunning] = useState(false);
+  const { toast } = useToast();
 
   const fetchLogs = async () => {
     const res = await fetch("/api/pipeline/logs");
@@ -23,13 +25,27 @@ export default function PipelineLogs() {
 
   useEffect(() => { fetchLogs(); }, []);
 
+  // Auto-refresh when a pipeline is running
+  useEffect(() => {
+    const hasRunning = logs.some((l) => l.status === "running");
+    if (!hasRunning) return;
+    const interval = setInterval(fetchLogs, 5000);
+    return () => clearInterval(interval);
+  }, [logs]);
+
   const handleRun = async () => {
     setRunning(true);
     try {
-      await fetch("/api/pipeline/run", { method: "POST" });
+      const res = await fetch("/api/pipeline/run", { method: "POST" });
+      const data = await res.json();
       await fetchLogs();
+      if (data.status === "completed") {
+        toast(`파이프라인 완료: ${data.articlesCount}건 수집`, "success");
+      } else {
+        toast(`파이프라인 실패: ${data.errors?.join(", ")}`, "error");
+      }
     } catch {
-      alert("파이프라인 실행 실패");
+      toast("파이프라인 실행 실패", "error");
     }
     setRunning(false);
   };

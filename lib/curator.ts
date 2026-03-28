@@ -34,14 +34,6 @@ export async function curateArticles(batchId: string): Promise<void> {
     return;
   }
 
-  // Build content list for Claude
-  const contentList = articles
-    .map(
-      (a: Article, i: number) =>
-        `[${i}] [${a.content_type}] ${a.title} (${a.source || "unknown"})${a.summary ? "\n    " + a.summary : ""}`
-    )
-    .join("\n\n");
-
   // Process in batches of 20
   const batchSize = 20;
   for (let i = 0; i < articles.length; i += batchSize) {
