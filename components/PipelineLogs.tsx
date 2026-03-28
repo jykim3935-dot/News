@@ -5,9 +5,9 @@ import type { PipelineRun } from "@/lib/supabase";
 import { useToast } from "@/components/Toast";
 
 const STATUS_STYLES: Record<string, { bg: string; text: string }> = {
-  running: { bg: "bg-blue-500/20", text: "text-blue-400" },
-  completed: { bg: "bg-green-500/20", text: "text-green-400" },
-  failed: { bg: "bg-red-500/20", text: "text-red-400" },
+  running: { bg: "bg-blue-100", text: "text-blue-700" },
+  completed: { bg: "bg-green-100", text: "text-green-700" },
+  failed: { bg: "bg-red-100", text: "text-red-700" },
 };
 
 export default function PipelineLogs() {
@@ -25,7 +25,6 @@ export default function PipelineLogs() {
 
   useEffect(() => { fetchLogs(); }, []);
 
-  // Auto-refresh when a pipeline is running
   useEffect(() => {
     const hasRunning = logs.some((l) => l.status === "running");
     if (!hasRunning) return;
@@ -71,54 +70,81 @@ export default function PipelineLogs() {
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
-        <h3 className="text-lg font-semibold">실행 로그 ({logs.length})</h3>
+        <h3 className="text-lg font-semibold text-gray-900">실행 로그 ({logs.length})</h3>
         <button
           onClick={handleRun}
           disabled={running}
-          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-600/50 text-white rounded-lg text-sm"
+          className="px-3 sm:px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white rounded-lg text-xs sm:text-sm"
         >
           {running ? "실행 중..." : "🔄 수동 실행"}
         </button>
       </div>
 
       {loading ? (
-        <div className="text-center py-8 text-[#64748B]">로딩 중...</div>
+        <div className="text-center py-8 text-gray-400">로딩 중...</div>
       ) : logs.length === 0 ? (
-        <div className="text-center py-8 text-[#64748B]">실행 이력이 없습니다.</div>
+        <div className="text-center py-8 text-gray-400">실행 이력이 없습니다.</div>
       ) : (
-        <div className="border border-[#334155] rounded-lg overflow-hidden">
-          <table className="w-full">
-            <thead>
-              <tr className="bg-[#0F172A] border-b-2 border-[#334155]">
-                <th className="px-3 py-2 text-left text-[#64748B] text-xs font-semibold">시작 시간</th>
-                <th className="px-3 py-2 text-left text-[#64748B] text-xs font-semibold">상태</th>
-                <th className="px-3 py-2 text-left text-[#64748B] text-xs font-semibold">기사 수</th>
-                <th className="px-3 py-2 text-left text-[#64748B] text-xs font-semibold">소요 시간</th>
-                <th className="px-3 py-2 text-left text-[#64748B] text-xs font-semibold">배치 ID</th>
-                <th className="px-3 py-2 text-left text-[#64748B] text-xs font-semibold">에러</th>
-              </tr>
-            </thead>
-            <tbody>
-              {logs.map((log) => {
-                const style = STATUS_STYLES[log.status] || STATUS_STYLES.running;
-                return (
-                  <tr key={log.id} className="border-b border-[#334155] hover:bg-[#1E293B]/50">
-                    <td className="px-3 py-2 text-sm text-[#94A3B8]">{formatTime(log.started_at)}</td>
-                    <td className="px-3 py-2">
-                      <span className={`text-xs ${style.bg} ${style.text} px-2 py-0.5 rounded`}>
-                        {log.status}
-                      </span>
-                    </td>
-                    <td className="px-3 py-2 text-sm">{log.articles_count}</td>
-                    <td className="px-3 py-2 text-sm text-[#94A3B8]">{formatDuration(log)}</td>
-                    <td className="px-3 py-2 text-xs text-[#64748B] font-mono">{log.batch_id.slice(0, 8)}...</td>
-                    <td className="px-3 py-2 text-xs text-red-400 max-w-xs truncate">{log.error || "-"}</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+        <>
+          {/* Desktop Table */}
+          <div className="hidden md:block border border-gray-200 rounded-lg overflow-hidden shadow-sm">
+            <table className="w-full">
+              <thead>
+                <tr className="bg-gray-50 border-b-2 border-gray-200">
+                  <th className="px-3 py-2 text-left text-gray-500 text-xs font-semibold">시작 시간</th>
+                  <th className="px-3 py-2 text-left text-gray-500 text-xs font-semibold">상태</th>
+                  <th className="px-3 py-2 text-left text-gray-500 text-xs font-semibold">기사 수</th>
+                  <th className="px-3 py-2 text-left text-gray-500 text-xs font-semibold">소요 시간</th>
+                  <th className="px-3 py-2 text-left text-gray-500 text-xs font-semibold">배치 ID</th>
+                  <th className="px-3 py-2 text-left text-gray-500 text-xs font-semibold">에러</th>
+                </tr>
+              </thead>
+              <tbody>
+                {logs.map((log) => {
+                  const style = STATUS_STYLES[log.status] || STATUS_STYLES.running;
+                  return (
+                    <tr key={log.id} className="border-b border-gray-100 hover:bg-gray-50">
+                      <td className="px-3 py-2 text-sm text-gray-500">{formatTime(log.started_at)}</td>
+                      <td className="px-3 py-2">
+                        <span className={`text-xs ${style.bg} ${style.text} px-2 py-0.5 rounded`}>
+                          {log.status}
+                        </span>
+                      </td>
+                      <td className="px-3 py-2 text-sm text-gray-900">{log.articles_count}</td>
+                      <td className="px-3 py-2 text-sm text-gray-500">{formatDuration(log)}</td>
+                      <td className="px-3 py-2 text-xs text-gray-400 font-mono">{log.batch_id.slice(0, 8)}...</td>
+                      <td className="px-3 py-2 text-xs text-red-600 max-w-xs truncate">{log.error || "-"}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Mobile Cards */}
+          <div className="md:hidden space-y-2">
+            {logs.map((log) => {
+              const style = STATUS_STYLES[log.status] || STATUS_STYLES.running;
+              return (
+                <div key={log.id} className="p-3 bg-white border border-gray-200 rounded-lg shadow-sm">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-sm text-gray-500">{formatTime(log.started_at)}</span>
+                    <span className={`text-xs ${style.bg} ${style.text} px-2 py-0.5 rounded`}>
+                      {log.status}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-3 text-sm">
+                    <span className="text-gray-900 font-medium">{log.articles_count}건</span>
+                    <span className="text-gray-400">{formatDuration(log)}</span>
+                  </div>
+                  {log.error && (
+                    <div className="text-xs text-red-600 mt-1 truncate">{log.error}</div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </>
       )}
     </div>
   );
