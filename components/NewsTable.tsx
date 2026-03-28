@@ -34,6 +34,7 @@ export default function NewsTable() {
   const [running, setRunning] = useState(false);
   const [filter, setFilter] = useState<ContentType | "all">("all");
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [showPreview, setShowPreview] = useState(false);
 
   const fetchArticles = async () => {
     setLoading(true);
@@ -110,7 +111,15 @@ export default function NewsTable() {
             ) : null;
           })}
         </div>
-        <div className="ml-auto">
+        <div className="ml-auto flex gap-2">
+          {total > 0 && (
+            <button
+              onClick={() => setShowPreview(true)}
+              className="px-4 py-2 bg-[#334155] hover:bg-[#475569] text-[#E2E8F0] rounded-lg text-sm font-medium transition"
+            >
+              📧 뉴스레터 미리보기
+            </button>
+          )}
           <button
             onClick={handleRun}
             disabled={running}
@@ -257,6 +266,28 @@ export default function NewsTable() {
               })}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {/* Newsletter Preview Modal */}
+      {showPreview && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
+          <div className="relative w-[95vw] h-[90vh] bg-[#1E293B] rounded-lg border border-[#334155] overflow-hidden">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-[#334155]">
+              <h3 className="text-sm font-semibold">뉴스레터 미리보기</h3>
+              <button
+                onClick={() => setShowPreview(false)}
+                className="text-[#94A3B8] hover:text-white text-lg"
+              >
+                ✕
+              </button>
+            </div>
+            <iframe
+              src="/api/newsletter/preview"
+              className="w-full h-[calc(100%-48px)]"
+              title="Newsletter Preview"
+            />
+          </div>
         </div>
       )}
     </div>

@@ -2,6 +2,7 @@ import { supabase } from "./supabase";
 import type { Article } from "./supabase";
 import { collectViaWebSearch } from "./collector-websearch";
 import { collectViaRSS } from "./collector-rss";
+import { collectViaDart } from "./collector-dart";
 import crypto from "crypto";
 
 function deduplicateArticles(
@@ -24,20 +25,24 @@ export async function collectAll(
 ): Promise<Partial<Article>[]> {
   console.log("[collector] Starting collection...");
 
-  // Run web search and RSS in parallel
-  const [webArticles, rssArticles] = await Promise.all([
+  // Run all collectors in parallel
+  const [webArticles, rssArticles, dartArticles] = await Promise.allSettled([
     collectViaWebSearch(batchId),
     collectViaRSS(batchId),
-  ]);
+    collectViaDart(batchId),
+  ]).then((results) =>
+    results.map((r) => (r.status === "fulfilled" ? r.value : []))
+  );
 
   console.log(
-    `[collector] Web: ${webArticles.length}, RSS: ${rssArticles.length}`
+    `[collector] Web: ${webArticles.length}, RSS: ${rssArticles.length}, DART: ${dartArticles.length}`
   );
 
   // Combine and deduplicate
   const allArticles = deduplicateArticles([
     ...webArticles,
     ...rssArticles,
+    ...dartArticles,
   ]);
 
   console.log(`[collector] After dedup: ${allArticles.length} articles`);
