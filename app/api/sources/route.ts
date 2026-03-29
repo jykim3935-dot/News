@@ -26,8 +26,15 @@ export async function POST(req: NextRequest) {
   if (isSupabaseConfigured()) {
     try {
       const { data, error } = await supabase.from("sources").insert(body).select().single();
-      if (!error && data) return NextResponse.json(data, { status: 201 });
-    } catch { /* fall through to local store */ }
+      if (error) {
+        console.error("[sources POST] Supabase error:", error.message);
+        // If constraint error, return details to help debug
+        return NextResponse.json({ error: error.message }, { status: 400 });
+      }
+      if (data) return NextResponse.json(data, { status: 201 });
+    } catch (err) {
+      console.error("[sources POST] exception:", err);
+    }
   }
 
   const item = localStore.insert<Source>("sources", body);

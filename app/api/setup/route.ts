@@ -61,6 +61,14 @@ const TABLES_SQL = [
   `CREATE INDEX IF NOT EXISTS idx_trends_batch_id ON trends(batch_id)`,
 ];
 
+/** Fix old CHECK constraints that block government/research content types */
+const FIX_CONSTRAINTS_SQL = [
+  `ALTER TABLE articles DROP CONSTRAINT IF EXISTS articles_content_type_check`,
+  `ALTER TABLE sources DROP CONSTRAINT IF EXISTS sources_content_type_check`,
+  `ALTER TABLE articles DROP CONSTRAINT IF EXISTS articles_urgency_check`,
+  `ALTER TABLE articles DROP CONSTRAINT IF EXISTS articles_relevance_score_check`,
+];
+
 /** Execute SQL via Supabase's internal pg-meta API (same as SQL Editor) */
 async function execSQL(url: string, serviceKey: string, sql: string): Promise<{ ok: boolean; error?: string }> {
   // Try multiple known Supabase SQL endpoints
@@ -109,6 +117,12 @@ export async function POST(req: NextRequest) {
 
     const steps: string[] = [];
     const sb = createClient(url, serviceKey);
+
+    // 0. Fix old CHECK constraints that block government/research types
+    for (const sql of FIX_CONSTRAINTS_SQL) {
+      await execSQL(url, serviceKey, sql);
+    }
+    steps.push("✅ 제약조건 정리 완료");
 
     // 1. Test connection — try querying sources table
     const { error: testErr } = await sb.from("sources").select("id").limit(1);
