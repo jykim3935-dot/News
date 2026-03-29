@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import type { Article, ContentType } from "@/lib/supabase";
+import type { Article, ContentType, Trend } from "@/lib/supabase";
 import { CONTENT_TYPES } from "@/lib/supabase";
 import { useToast } from "@/components/Toast";
 
@@ -39,6 +39,8 @@ export default function NewsTable() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [showPreview, setShowPreview] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [executiveBrief, setExecutiveBrief] = useState<string>("");
+  const [trends, setTrends] = useState<Trend[]>([]);
   const [sortKey, setSortKey] = useState<"relevance_score" | "urgency" | "content_type">("relevance_score");
   const [sortAsc, setSortAsc] = useState(false);
   const { toast } = useToast();
@@ -68,6 +70,8 @@ export default function NewsTable() {
         // Use articles directly from pipeline response (Vercel /tmp is ephemeral)
         if (Array.isArray(data.articles) && data.articles.length > 0) {
           setArticles(data.articles);
+          setExecutiveBrief(data.executiveBrief || "");
+          setTrends(data.trends || []);
           setLoading(false);
         }
         const count = data.articlesCount || data.articles?.length || 0;
@@ -94,7 +98,7 @@ export default function NewsTable() {
       const res = await fetch("/api/newsletter/preview", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ articles }),
+        body: JSON.stringify({ articles, executiveBrief, trends }),
       });
       const html = await res.text();
       const blob = new Blob([html], { type: "text/html" });

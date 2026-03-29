@@ -60,15 +60,18 @@ async function updateArticle(id: string, updates: Partial<Article>): Promise<voi
 /**
  * Step A: Basic curation — score, urgency, category, impact for all articles
  */
-export async function curateArticles(batchId: string): Promise<void> {
+export async function curateArticles(batchId: string): Promise<{ scored: number; failed: number }> {
   console.log("[curator] Step A: Basic curation for batch:", batchId);
 
   const articles = await fetchArticlesForCuration(batchId);
 
   if (!articles?.length) {
     console.log("[curator] No articles to curate");
-    return;
+    return { scored: 0, failed: 0 };
   }
+
+  let totalScored = 0;
+  let totalFailed = 0;
 
   const batchSize = 30;
   for (let i = 0; i < articles.length; i += batchSize) {
@@ -114,10 +117,15 @@ export async function curateArticles(batchId: string): Promise<void> {
         });
       }
 
+      totalScored += analyses.length;
+      const batchFailed = batch.length - analyses.length;
+      if (batchFailed > 0) totalFailed += batchFailed;
+
       console.log(
-        `[curator] Basic batch ${i / batchSize + 1}: ${analyses.length} articles`
+        `[curator] Basic batch ${i / batchSize + 1}: ${analyses.length}/${batch.length} articles scored`
       );
     } catch (error) {
+      totalFailed += batch.length;
       console.error(`[curator] Error in basic curation:`, error);
     }
 
@@ -126,7 +134,8 @@ export async function curateArticles(batchId: string): Promise<void> {
     }
   }
 
-  console.log("[curator] Basic curation complete");
+  console.log(`[curator] Basic curation complete: ${totalScored} scored, ${totalFailed} failed`);
+  return { scored: totalScored, failed: totalFailed };
 }
 
 /**

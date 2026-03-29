@@ -18,6 +18,8 @@ interface PipelineResult {
   errors: string[];
   status: "completed" | "failed";
   articles: Article[];
+  executiveBrief: string;
+  trends: Trend[];
 }
 
 async function createPipelineRun(): Promise<{ id: string; batch_id: string }> {
@@ -125,6 +127,8 @@ export async function runPipeline(
       errors: errors.length > 0 ? errors : ["수집된 기사가 없습니다"],
       status: errors.length > 0 ? "failed" : "completed",
       articles: [],
+      executiveBrief: "",
+      trends: [],
     };
   }
 
@@ -139,7 +143,10 @@ export async function runPipeline(
   // Step 2-3: Curation (requires Anthropic API)
   try {
     console.log("[pipeline] Step 2: Basic curation...");
-    await curateArticles(batchId);
+    const curationResult = await curateArticles(batchId);
+    if (curationResult.failed > 0) {
+      errors.push(`큐레이션: ${curationResult.scored}건 성공, ${curationResult.failed}건 실패`);
+    }
     console.log("[pipeline] Step 3: Deep curation...");
     await deepCurateArticles(batchId);
 
@@ -257,5 +264,7 @@ export async function runPipeline(
     errors,
     status: "completed",
     articles: finalArticles,
+    executiveBrief,
+    trends: detectedTrends,
   };
 }
