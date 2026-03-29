@@ -19,7 +19,7 @@ export async function generateExecutiveBrief(
   // Sort by relevance and take top articles for brief
   const topArticles = [...articles]
     .sort((a, b) => (b.relevance_score || 0) - (a.relevance_score || 0))
-    .slice(0, 30);
+    .slice(0, 50);
 
   const articleList = topArticles
     .map(

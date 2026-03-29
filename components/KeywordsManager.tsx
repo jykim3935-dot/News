@@ -197,6 +197,10 @@ export default function KeywordsManager() {
   const [editId, setEditId] = useState<string | null>(null);
   const [showPresets, setShowPresets] = useState(false);
   const [addingPresets, setAddingPresets] = useState(false);
+  const [showAiSuggest, setShowAiSuggest] = useState(false);
+  const [aiQuery, setAiQuery] = useState("");
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiSuggestions, setAiSuggestions] = useState<{ groups: typeof PRESET_KEYWORD_GROUPS; explanation: string } | null>(null);
   const { toast } = useToast();
   const [form, setForm] = useState({
     group_name: "",
@@ -312,6 +316,35 @@ export default function KeywordsManager() {
     }
   };
 
+  const handleAiSuggest = async () => {
+    if (!aiQuery.trim()) { toast("검색어를 입력하세요", "info"); return; }
+    setAiLoading(true);
+    setAiSuggestions(null);
+    try {
+      const res = await fetch("/api/keywords/suggest", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query: aiQuery }),
+      });
+      if (!res.ok) { toast("AI 추천 실패", "error"); setAiLoading(false); return; }
+      const data = await res.json();
+      setAiSuggestions(data);
+    } catch { toast("AI 추천 중 오류", "error"); }
+    setAiLoading(false);
+  };
+
+  const handleAddAiGroup = async (group: typeof PRESET_KEYWORD_GROUPS[number]) => {
+    const exists = groups.some((g) => g.group_name === group.group_name);
+    if (exists) { toast(`"${group.group_name}" 이미 존재합니다`, "info"); return; }
+    const ok = await addSingleKeywordGroup(group as unknown as Record<string, unknown>);
+    if (ok) {
+      toast(`"${group.group_name}" 추가 완료`, "success");
+      await fetchGroups();
+    } else {
+      toast(`"${group.group_name}" 추가 실패`, "error");
+    }
+  };
+
   const handleAddAllPresets = async () => {
     setAddingPresets(true);
     let added = 0;
@@ -340,7 +373,13 @@ export default function KeywordsManager() {
         <h3 className="text-lg font-semibold text-gray-900">키워드 그룹 ({groups.length})</h3>
         <div className="flex gap-2">
           <button
-            onClick={() => setShowPresets(!showPresets)}
+            onClick={() => { setShowAiSuggest(!showAiSuggest); setShowPresets(false); }}
+            className="px-3 sm:px-4 py-2 bg-purple-50 hover:bg-purple-100 text-purple-700 rounded-lg text-xs sm:text-sm border border-purple-200"
+          >
+            🤖 AI 추천
+          </button>
+          <button
+            onClick={() => { setShowPresets(!showPresets); setShowAiSuggest(false); }}
             className="px-3 sm:px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-xs sm:text-sm border border-gray-200"
           >
             📋 프리셋
@@ -398,6 +437,66 @@ export default function KeywordsManager() {
               );
             })}
           </div>
+        </div>
+      )}
+
+      {/* AI Suggest Panel */}
+      {showAiSuggest && (
+        <div className="p-4 bg-purple-50 border border-purple-200 rounded-lg space-y-3">
+          <h4 className="text-sm font-semibold text-purple-900">🤖 AI 키워드 추천</h4>
+          <div className="flex gap-2">
+            <input
+              placeholder="예: 양자컴퓨팅 관련 키워드, 자율주행 AI 키워드..."
+              value={aiQuery}
+              onChange={(e) => setAiQuery(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleAiSuggest()}
+              className="flex-1 px-3 py-2 bg-white border border-purple-200 rounded text-sm text-gray-800"
+            />
+            <button
+              onClick={handleAiSuggest}
+              disabled={aiLoading}
+              className="px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-300 text-white rounded text-sm whitespace-nowrap"
+            >
+              {aiLoading ? "분석 중..." : "추천받기"}
+            </button>
+          </div>
+          {aiSuggestions && (
+            <div className="space-y-2">
+              {aiSuggestions.explanation && (
+                <p className="text-xs text-purple-700 bg-purple-100 rounded p-2">{aiSuggestions.explanation}</p>
+              )}
+              {aiSuggestions.groups?.map((group) => {
+                const exists = groups.some((g) => g.group_name === group.group_name);
+                return (
+                  <div key={group.group_name} className="p-3 bg-white rounded border border-purple-100">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-sm font-medium text-gray-900">{group.group_name}</span>
+                      <button
+                        onClick={() => handleAddAiGroup(group)}
+                        disabled={exists}
+                        className={`px-2 py-1 rounded text-xs ${
+                          exists ? "bg-gray-100 text-gray-400 cursor-not-allowed" : "bg-purple-100 text-purple-700 hover:bg-purple-200"
+                        }`}
+                      >
+                        {exists ? "추가됨" : "+ 추가"}
+                      </button>
+                    </div>
+                    <div className="text-xs text-gray-500 mb-1">
+                      {group.category} · 우선순위 {group.priority} · {group.content_types?.join(", ")}
+                    </div>
+                    <div className="flex flex-wrap gap-1">
+                      {group.keywords?.slice(0, 8).map((k: string) => (
+                        <span key={k} className="text-xs bg-purple-50 border border-purple-100 rounded px-1.5 py-0.5 text-purple-700">{k}</span>
+                      ))}
+                      {(group.keywords?.length || 0) > 8 && (
+                        <span className="text-xs text-gray-400">+{group.keywords.length - 8}</span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
 

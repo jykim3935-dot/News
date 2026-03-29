@@ -62,9 +62,9 @@ async function fetchRssFeed(
     const articles: Partial<Article>[] = [];
     const lowerKeywords = keywords.map((k) => k.toLowerCase());
     // Only accept articles from the last 7 days
-    const cutoff = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    const cutoff = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000);
 
-    for (const item of feed.items.slice(0, 30)) {
+    for (const item of feed.items.slice(0, 50)) {
       // Date filter
       if (item.isoDate) {
         const pubDate = new Date(item.isoDate);
