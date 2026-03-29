@@ -4,9 +4,30 @@ import type { Article } from "./supabase";
 
 const anthropic = new Anthropic();
 
-function extractJSON(text: string): string {
-  const match = text.match(/\{[\s\S]*\}/);
-  return match ? match[0] : "{}";
+function safeParseJSON(text: string): Record<string, unknown> | null {
+  // Try direct parse first (Claude usually returns clean JSON)
+  const trimmed = text.trim();
+  try {
+    return JSON.parse(trimmed);
+  } catch { /* fallback */ }
+
+  // Try extracting JSON block between first { and its matching }
+  const start = trimmed.indexOf("{");
+  if (start === -1) return null;
+
+  let depth = 0;
+  for (let i = start; i < trimmed.length; i++) {
+    if (trimmed[i] === "{") depth++;
+    else if (trimmed[i] === "}") depth--;
+    if (depth === 0) {
+      try {
+        return JSON.parse(trimmed.slice(start, i + 1));
+      } catch {
+        return null;
+      }
+    }
+  }
+  return null;
 }
 
 export async function generateExecutiveBrief(
@@ -14,7 +35,7 @@ export async function generateExecutiveBrief(
 ): Promise<string> {
   console.log("[executive-brief] Generating brief from", articles.length, "articles");
 
-  if (articles.length === 0) return "수집된 기사가 없습니다.";
+  if (articles.length === 0) return "";
 
   // Sort by relevance and take top articles for brief
   const topArticles = [...articles]
@@ -42,12 +63,25 @@ export async function generateExecutiveBrief(
     });
 
     const textBlock = response.content.find((b) => b.type === "text");
-    if (!textBlock || textBlock.type !== "text") return "브리프 생성 실패";
+    if (!textBlock || textBlock.type !== "text") {
+      console.error("[executive-brief] No text block in response");
+      return "";
+    }
 
-    const parsed = JSON.parse(extractJSON(textBlock.text));
-    return parsed.executive_brief || "브리프 생성 실패";
+    const parsed = safeParseJSON(textBlock.text);
+    if (!parsed || !parsed.executive_brief) {
+      console.error("[executive-brief] Failed to parse JSON or missing executive_brief key");
+      // Try to use raw text if it contains tags
+      const raw = textBlock.text.trim();
+      if (raw.includes("[시장 시그널]") || raw.includes("[기회 포착]")) {
+        return raw;
+      }
+      return "";
+    }
+
+    return parsed.executive_brief as string;
   } catch (error) {
     console.error("[executive-brief] Error:", error);
-    return "브리프 생성 중 오류 발생";
+    return "";
   }
 }

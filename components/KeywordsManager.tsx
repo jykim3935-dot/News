@@ -188,6 +188,23 @@ const PRESET_KEYWORD_GROUPS: { group_name: string; category: Category; content_t
     keywords: ["edge AI", "온디바이스 AI", "AI PC", "모바일 AI", "경량화 모델", "quantization", "모델 압축", "TinyML", "edge inference"],
     enabled: true,
   },
+  // ===== 국책연구기관/싱크탱크 (Priority 2) =====
+  {
+    group_name: "국책연구기관 보고서",
+    category: "market",
+    content_types: ["report", "research", "government"],
+    priority: 2,
+    keywords: ["KDI", "한국개발연구원", "KIET", "산업연구원", "ETRI", "전자통신연구원", "SPRi", "소프트웨어정책연구소", "KISDI", "정보통신정책연구원", "KISA", "한국인터넷진흥원", "국책연구기관", "정책보고서"],
+    enabled: true,
+  },
+  {
+    group_name: "미국/글로벌 싱크탱크",
+    category: "regulation",
+    content_types: ["global", "report", "research"],
+    priority: 2,
+    keywords: ["RAND", "Brookings", "CSIS", "Stanford HAI", "AI Index", "Allen Institute", "OECD AI", "AI governance", "AI policy research", "think tank AI", "US AI policy"],
+    enabled: true,
+  },
 ];
 
 export default function KeywordsManager() {

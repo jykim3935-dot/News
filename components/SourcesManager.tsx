@@ -73,6 +73,20 @@ const PRESET_SOURCES: Omit<Source, "id" | "created_at">[] = [
   // ──────────── 헬스케어 AI (NADIA) ────────────
   { name: "의료AI 뉴스", url: "https://www.google.com/search?q=의료AI+피부질환+AI진단+디지털헬스", type: "websearch", content_type: "news", category: "market", description: "NADIA 관련 의료AI, 피부질환 AI", enabled: true },
   { name: "FDA AI/ML", url: "https://www.google.com/search?q=FDA+AI+ML+SaMD+approved+devices", type: "websearch", content_type: "global", category: "regulation", description: "FDA AI 의료기기 승인 동향", enabled: true },
+  // ──────────── 한국 국책연구기관 ────────────
+  { name: "KDI (한국개발연구원)", url: "KDI 한국개발연구원 AI 경제 산업 분석", type: "websearch", content_type: "report", category: "market", description: "경제전망·산업분석·정책평가", enabled: true },
+  { name: "KIET (산업연구원)", url: "KIET 산업연구원 AI 제조업 산업 동향", type: "websearch", content_type: "report", category: "market", description: "산업 AI 확산·제조업 AI", enabled: true },
+  { name: "ETRI (전자통신연구원)", url: "ETRI 전자통신연구원 AI 기술 동향", type: "websearch", content_type: "research", category: "tech", description: "AI·ICT 핵심 기술 R&D", enabled: true },
+  { name: "SPRi (SW정책연구소)", url: "SPRi 소프트웨어정책연구소 AI 동향", type: "websearch", content_type: "report", category: "market", description: "AI·SW 산업 동향·정책", enabled: true },
+  { name: "KISDI (정보통신정책연구원)", url: "KISDI 정보통신정책연구원 디지털 AI 정책", type: "websearch", content_type: "report", category: "regulation", description: "디지털 정책·AI 규제 연구", enabled: true },
+  { name: "KISA (한국인터넷진흥원)", url: "KISA 한국인터넷진흥원 AI 보안 동향", type: "websearch", content_type: "report", category: "regulation", description: "AI 보안·개인정보보호", enabled: true },
+  // ──────────── 미국/글로벌 리서치 ────────────
+  { name: "RAND Corporation", url: "RAND Corporation AI policy defense technology research", type: "websearch", content_type: "global", category: "regulation", description: "AI 정책·국방기술 리서치", enabled: true },
+  { name: "Brookings Institution", url: "Brookings Institution AI technology policy analysis", type: "websearch", content_type: "global", category: "regulation", description: "AI 정책 분석·거버넌스", enabled: true },
+  { name: "CSIS Technology", url: "CSIS Center for Strategic International Studies AI technology", type: "websearch", content_type: "global", category: "regulation", description: "전략·국제관계 AI 분석", enabled: true },
+  { name: "Stanford HAI", url: "Stanford HAI Human-Centered AI latest research", type: "websearch", content_type: "research", category: "tech", description: "AI Index·인간중심 AI 연구", enabled: true },
+  { name: "Allen Institute for AI", url: "Allen Institute AI AI2 research blog", type: "websearch", content_type: "research", category: "tech", description: "AI 기초연구·오픈소스 AI", enabled: true },
+  { name: "OECD AI Policy", url: "OECD AI policy observatory latest", type: "websearch", content_type: "global", category: "regulation", description: "AI 정책 국제비교·규제 동향", enabled: true },
 ];
 
 export default function SourcesManager() {

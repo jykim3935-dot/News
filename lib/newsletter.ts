@@ -48,7 +48,7 @@ function displaySummary(a: Article): string {
 /* ─── Executive Brief ─── */
 
 function renderBrief(brief: string): string {
-  if (!brief) return "";
+  if (!brief || brief.includes("브리프 생성") || brief.includes("수집된 기사가")) return "";
 
   const tagColors: Record<string, string> = {
     "긴급 대응": "#dc2626",

@@ -64,6 +64,22 @@ export const DEFAULT_SOURCES: PresetSource[] = [
   { name: "보건복지부", url: "보건복지부 디지털 헬스케어 AI 정책", type: "websearch", content_type: "government", category: "regulation", description: "의료AI·디지털헬스 규제/정책", enabled: true },
   { name: "IITP", url: "IITP 정보통신기획평가원 AI 사업 공고", type: "websearch", content_type: "government", category: "customer", description: "AI R&D 과제 기획·평가", enabled: true },
   { name: "NIA", url: "NIA 한국지능정보사회진흥원 AI 정책", type: "websearch", content_type: "government", category: "customer", description: "국가 AI 데이터·인프라 추진", enabled: true },
+
+  // ── 한국 국책연구기관 ──
+  { name: "KDI (한국개발연구원)", url: "KDI 한국개발연구원 AI 경제 산업 분석", type: "websearch", content_type: "report", category: "market", description: "경제전망·산업분석·정책평가", enabled: true },
+  { name: "KIET (산업연구원)", url: "KIET 산업연구원 AI 제조업 산업 동향", type: "websearch", content_type: "report", category: "market", description: "산업 AI 확산·제조업 AI", enabled: true },
+  { name: "ETRI (전자통신연구원)", url: "ETRI 전자통신연구원 AI 기술 동향", type: "websearch", content_type: "research", category: "tech", description: "AI·ICT 핵심 기술 R&D", enabled: true },
+  { name: "SPRi (SW정책연구소)", url: "SPRi 소프트웨어정책연구소 AI 동향", type: "websearch", content_type: "report", category: "market", description: "AI·SW 산업 동향·정책", enabled: true },
+  { name: "KISDI (정보통신정책연구원)", url: "KISDI 정보통신정책연구원 디지털 AI 정책", type: "websearch", content_type: "report", category: "regulation", description: "디지털 정책·AI 규제 연구", enabled: true },
+  { name: "KISA (한국인터넷진흥원)", url: "KISA 한국인터넷진흥원 AI 보안 동향", type: "websearch", content_type: "report", category: "regulation", description: "AI 보안·개인정보보호", enabled: true },
+
+  // ── 미국/글로벌 리서치 ──
+  { name: "RAND Corporation", url: "RAND Corporation AI policy defense technology research", type: "websearch", content_type: "global", category: "regulation", description: "AI 정책·국방기술 리서치", enabled: true },
+  { name: "Brookings Institution", url: "Brookings Institution AI technology policy analysis", type: "websearch", content_type: "global", category: "regulation", description: "AI 정책 분석·거버넌스", enabled: true },
+  { name: "CSIS Technology", url: "CSIS Center for Strategic International Studies AI technology", type: "websearch", content_type: "global", category: "regulation", description: "전략·국제관계 AI 분석", enabled: true },
+  { name: "Stanford HAI", url: "Stanford HAI Human-Centered AI latest research", type: "websearch", content_type: "research", category: "tech", description: "AI Index·인간중심 AI 연구", enabled: true },
+  { name: "Allen Institute for AI", url: "Allen Institute AI AI2 research blog", type: "websearch", content_type: "research", category: "tech", description: "AI 기초연구·오픈소스 AI", enabled: true },
+  { name: "OECD AI Policy", url: "OECD AI policy observatory latest", type: "websearch", content_type: "global", category: "regulation", description: "AI 정책 국제비교·규제 동향", enabled: true },
 ];
 
 export const DEFAULT_KEYWORD_GROUPS: PresetKeywordGroup[] = [
@@ -190,6 +206,22 @@ export const DEFAULT_KEYWORD_GROUPS: PresetKeywordGroup[] = [
     content_types: ["government", "news"],
     priority: 2,
     keywords: ["과기정통부", "중기부", "보건복지부", "AI 바우처", "디지털뉴딜", "K-클라우드", "공공 클라우드", "AI 실증사업", "IITP", "NIA", "AI 특구", "디지털플랫폼정부"],
+    enabled: true,
+  },
+  {
+    group_name: "국책연구기관 보고서",
+    category: "market",
+    content_types: ["report", "research", "government"],
+    priority: 2,
+    keywords: ["KDI", "한국개발연구원", "KIET", "산업연구원", "ETRI", "전자통신연구원", "SPRi", "소프트웨어정책연구소", "KISDI", "정보통신정책연구원", "KISA", "한국인터넷진흥원", "국책연구기관", "정책보고서"],
+    enabled: true,
+  },
+  {
+    group_name: "미국/글로벌 싱크탱크",
+    category: "regulation",
+    content_types: ["global", "report", "research"],
+    priority: 2,
+    keywords: ["RAND", "Brookings", "CSIS", "Stanford HAI", "AI Index", "Allen Institute", "OECD AI", "AI governance", "AI policy research", "think tank AI", "US AI policy"],
     enabled: true,
   },
 ];
