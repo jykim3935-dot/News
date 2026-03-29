@@ -70,7 +70,7 @@ export async function curateArticles(batchId: string): Promise<void> {
     return;
   }
 
-  const batchSize = 20;
+  const batchSize = 30;
   for (let i = 0; i < articles.length; i += batchSize) {
     const batch = articles.slice(i, i + batchSize);
     const batchContent = batch
@@ -164,8 +164,8 @@ export async function deepCurateArticles(batchId: string): Promise<void> {
 
   console.log(`[curator] Deep curating ${articles.length} high-score articles`);
 
-  // Process in batches of 5 (more detailed analysis per article)
-  const batchSize = 5;
+  // Process in batches of 10 (more detailed analysis per article)
+  const batchSize = 10;
   for (let i = 0; i < articles.length; i += batchSize) {
     const batch = articles.slice(i, i + batchSize);
     const batchContent = batch

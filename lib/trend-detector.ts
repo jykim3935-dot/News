@@ -37,7 +37,7 @@ export async function detectTrends(
   // Use top articles for trend detection
   const topArticles = [...articles]
     .sort((a, b) => (b.relevance_score || 0) - (a.relevance_score || 0))
-    .slice(0, 40);
+    .slice(0, 60);
 
   const articleList = topArticles
     .map(

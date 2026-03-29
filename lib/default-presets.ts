@@ -45,6 +45,25 @@ export const DEFAULT_SOURCES: PresetSource[] = [
 
   // ── 투자/IR ──
   { name: "한국거래소 공시", url: "https://kind.krx.co.kr/disclosure/todaydisclosure.do?method=searchTodayDisclosureRss", type: "rss", content_type: "investment", category: "investment", description: "KOSDAQ 공시", enabled: true },
+
+  // ── 탑티어 시스템 학회 ──
+  { name: "USENIX ATC", url: "USENIX ATC systems conference latest papers", type: "websearch", content_type: "research", category: "tech", description: "시스템 분야 최고 학회 (OS, 분산시스템, 스토리지)", enabled: true },
+  { name: "OSDI/SOSP", url: "OSDI SOSP operating systems conference latest papers", type: "websearch", content_type: "research", category: "tech", description: "운영체제/분산시스템 탑티어 학회", enabled: true },
+  { name: "NeurIPS", url: "NeurIPS conference latest AI ML papers", type: "websearch", content_type: "research", category: "tech", description: "AI/ML 최고 학회", enabled: true },
+  { name: "ICML", url: "ICML conference latest machine learning papers", type: "websearch", content_type: "research", category: "tech", description: "머신러닝 탑티어 학회", enabled: true },
+  { name: "MLSys", url: "MLSys conference latest ML systems papers", type: "websearch", content_type: "research", category: "tech", description: "ML 시스템 전문 학회", enabled: true },
+
+  // ── 컨설팅펌 ──
+  { name: "Deloitte AI", url: "https://www2.deloitte.com/us/en/insights/focus/artificial-intelligence.html", type: "websearch", content_type: "consulting", category: "market", description: "딜로이트 AI 인사이트", enabled: true },
+  { name: "BCG AI", url: "https://www.bcg.com/capabilities/artificial-intelligence/insights", type: "websearch", content_type: "consulting", category: "market", description: "BCG AI 전략 리포트", enabled: true },
+  { name: "Bain Tech", url: "https://www.bain.com/insights/topics/technology-report/", type: "websearch", content_type: "consulting", category: "market", description: "베인 테크 리포트", enabled: true },
+
+  // ── 대한민국 정부 ──
+  { name: "과학기술정보통신부", url: "과학기술정보통신부 AI 정책 최신 발표", type: "websearch", content_type: "government", category: "regulation", description: "AI·디지털 정책 총괄 부처", enabled: true },
+  { name: "중소벤처기업부", url: "중소벤처기업부 AI 스타트업 지원 정책", type: "websearch", content_type: "government", category: "customer", description: "AI 스타트업·중소기업 지원", enabled: true },
+  { name: "보건복지부", url: "보건복지부 디지털 헬스케어 AI 정책", type: "websearch", content_type: "government", category: "regulation", description: "의료AI·디지털헬스 규제/정책", enabled: true },
+  { name: "IITP", url: "IITP 정보통신기획평가원 AI 사업 공고", type: "websearch", content_type: "government", category: "customer", description: "AI R&D 과제 기획·평가", enabled: true },
+  { name: "NIA", url: "NIA 한국지능정보사회진흥원 AI 정책", type: "websearch", content_type: "government", category: "customer", description: "국가 AI 데이터·인프라 추진", enabled: true },
 ];
 
 export const DEFAULT_KEYWORD_GROUPS: PresetKeywordGroup[] = [
@@ -145,6 +164,32 @@ export const DEFAULT_KEYWORD_GROUPS: PresetKeywordGroup[] = [
     content_types: ["news", "global", "investment"],
     priority: 2,
     keywords: ["데이터센터", "하이퍼스케일", "클라우드 인프라", "AWS", "Azure", "GCP", "sovereign cloud", "엣지 컴퓨팅", "코로케이션"],
+    enabled: true,
+  },
+
+  // ── Priority 2: 학술/컨설팅/정부 ──
+  {
+    group_name: "학술 시스템/인프라",
+    category: "tech",
+    content_types: ["research", "global"],
+    priority: 2,
+    keywords: ["USENIX ATC", "OSDI", "SOSP", "MLSys", "NeurIPS systems", "distributed systems", "GPU scheduling", "container orchestration", "cluster management", "resource allocation", "model parallelism", "inference serving paper"],
+    enabled: true,
+  },
+  {
+    group_name: "컨설팅 전략",
+    category: "market",
+    content_types: ["consulting", "report", "global"],
+    priority: 2,
+    keywords: ["digital transformation", "AI strategy", "enterprise AI adoption", "AI maturity", "McKinsey AI", "BCG AI", "Deloitte AI", "Bain technology", "AI ROI", "총소유비용 TCO", "AI 도입 전략"],
+    enabled: true,
+  },
+  {
+    group_name: "정부정책 사업",
+    category: "regulation",
+    content_types: ["government", "news"],
+    priority: 2,
+    keywords: ["과기정통부", "중기부", "보건복지부", "AI 바우처", "디지털뉴딜", "K-클라우드", "공공 클라우드", "AI 실증사업", "IITP", "NIA", "AI 특구", "디지털플랫폼정부"],
     enabled: true,
   },
 ];
