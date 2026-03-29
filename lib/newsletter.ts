@@ -11,7 +11,7 @@ function urgencyColor(u: string | null): string {
   }
 }
 
-function categoryLabel(c: string | null): string {
+export function categoryLabel(c: string | null): string {
   const m: Record<string, string> = {
     competitive: "경쟁", market: "시장", regulation: "규제",
     tech: "기술", customer: "고객", investment: "투자",
@@ -19,7 +19,7 @@ function categoryLabel(c: string | null): string {
   return c ? m[c] || c : "";
 }
 
-function contentTypeLabel(ct: string | null): string {
+export function contentTypeLabel(ct: string | null): string {
   const m: Record<string, string> = {
     news: "뉴스", report: "보고서", research: "학술",
     consulting: "컨설팅", government: "정부", global: "글로벌",
@@ -28,11 +28,11 @@ function contentTypeLabel(ct: string | null): string {
   return ct ? m[ct] || ct : "";
 }
 
-function displayTitle(a: Article): string {
+export function displayTitle(a: Article): string {
   return a.title_ko || a.title;
 }
 
-function displaySummary(a: Article): string {
+export function displaySummary(a: Article): string {
   return a.summary_ko || a.summary || "";
 }
 

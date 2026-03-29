@@ -252,13 +252,30 @@ export default function NewsTable() {
           <span className="text-gray-500 text-xs">평균 </span>
           <span className="text-blue-600 font-semibold text-sm">{avgScore}/10</span>
         </div>
-        <button
-          onClick={handleRun}
-          disabled={running}
-          className="ml-auto px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white rounded-lg text-xs sm:text-sm font-medium transition"
-        >
-          {running ? "수집 중..." : "수집 시작"}
-        </button>
+        <div className="ml-auto flex gap-2">
+          <a
+            href="/api/newsletter/download"
+            download
+            className="px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-xs sm:text-sm border border-gray-200 font-medium transition inline-flex items-center"
+          >
+            📥 MD
+          </a>
+          <a
+            href="/newsletter"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-xs sm:text-sm border border-gray-200 font-medium transition inline-flex items-center"
+          >
+            📰 뷰어
+          </a>
+          <button
+            onClick={handleRun}
+            disabled={running}
+            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white rounded-lg text-xs sm:text-sm font-medium transition"
+          >
+            {running ? "수집 중..." : "수집 시작"}
+          </button>
+        </div>
       </div>
 
       {/* Category Distribution */}

@@ -126,5 +126,33 @@ export default async function NewsletterPage() {
 
   const html = renderNewsletter({ articles, date, executiveBrief, trends });
 
-  return <div dangerouslySetInnerHTML={{ __html: html }} />;
+  return (
+    <>
+      <div style={{
+        maxWidth: 700, margin: "0 auto", padding: "10px 24px",
+        display: "flex", justifyContent: "space-between", alignItems: "center",
+        background: "#fafafa", borderBottom: "1px solid #e4e4e7",
+        fontFamily: "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif",
+        fontSize: 13,
+      }}>
+        <Link
+          href="/"
+          style={{ color: "#3b82f6", textDecoration: "none", fontWeight: 500 }}
+        >
+          ← 대시보드
+        </Link>
+        <a
+          href="/api/newsletter/download"
+          download
+          style={{
+            padding: "6px 14px", background: "#18181b", color: "#fff",
+            borderRadius: 6, textDecoration: "none", fontSize: 12, fontWeight: 500,
+          }}
+        >
+          📥 마크다운 다운로드
+        </a>
+      </div>
+      <div dangerouslySetInnerHTML={{ __html: html }} />
+    </>
+  );
 }
