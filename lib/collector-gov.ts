@@ -12,9 +12,21 @@ interface RawArticle {
   summary: string;
 }
 
-function extractJSON(text: string): string {
-  const match = text.match(/\{[\s\S]*\}/);
-  return match ? match[0] : "{}";
+function safeParseJSON(text: string): Record<string, unknown> | null {
+  const trimmed = text.trim();
+  try { return JSON.parse(trimmed); } catch { /* fallback */ }
+  const start = trimmed.indexOf("{");
+  if (start === -1) return null;
+  let depth = 0;
+  for (let i = start; i < trimmed.length; i++) {
+    if (trimmed[i] === "{") depth++;
+    else if (trimmed[i] === "}") depth--;
+    if (depth === 0) {
+      try { return JSON.parse(trimmed.slice(start, i + 1)); }
+      catch { return null; }
+    }
+  }
+  return null;
 }
 
 const GOV_KEYWORD_SETS = [
@@ -52,8 +64,9 @@ export async function collectGovPolicy(
       const textBlock = response.content.find((b) => b.type === "text");
       if (!textBlock || textBlock.type !== "text") continue;
 
-      const parsed = JSON.parse(extractJSON(textBlock.text));
-      const articles: RawArticle[] = parsed.articles || [];
+      const parsed = safeParseJSON(textBlock.text);
+      if (!parsed) continue;
+      const articles: RawArticle[] = (parsed.articles as RawArticle[]) || [];
 
       allArticles.push(
         ...articles.map((a) => ({

@@ -3,9 +3,21 @@ import Anthropic from "@anthropic-ai/sdk";
 
 const anthropic = new Anthropic();
 
-function extractJSON(text: string): string {
-  const match = text.match(/\{[\s\S]*\}/);
-  return match ? match[0] : "{}";
+function safeParseJSON(text: string): Record<string, unknown> | null {
+  const trimmed = text.trim();
+  try { return JSON.parse(trimmed); } catch { /* fallback */ }
+  const start = trimmed.indexOf("{");
+  if (start === -1) return null;
+  let depth = 0;
+  for (let i = start; i < trimmed.length; i++) {
+    if (trimmed[i] === "{") depth++;
+    else if (trimmed[i] === "}") depth--;
+    if (depth === 0) {
+      try { return JSON.parse(trimmed.slice(start, i + 1)); }
+      catch { return null; }
+    }
+  }
+  return null;
 }
 
 export async function POST(req: NextRequest) {
@@ -57,7 +69,10 @@ JSON만 반환하세요.`,
       return NextResponse.json({ error: "AI 응답 파싱 실패" }, { status: 500 });
     }
 
-    const parsed = JSON.parse(extractJSON(textBlock.text));
+    const parsed = safeParseJSON(textBlock.text);
+    if (!parsed) {
+      return NextResponse.json({ error: "JSON 파싱 실패" }, { status: 500 });
+    }
     return NextResponse.json(parsed);
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error);

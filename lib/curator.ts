@@ -26,9 +26,28 @@ interface DeepAnalysis {
   action_items: string[];
 }
 
-function extractJSON(text: string): string {
-  const match = text.match(/\{[\s\S]*\}/);
-  return match ? match[0] : "{}";
+function safeParseJSON(text: string): Record<string, unknown> | null {
+  const trimmed = text.trim();
+  try {
+    return JSON.parse(trimmed);
+  } catch { /* fallback */ }
+
+  const start = trimmed.indexOf("{");
+  if (start === -1) return null;
+
+  let depth = 0;
+  for (let i = start; i < trimmed.length; i++) {
+    if (trimmed[i] === "{") depth++;
+    else if (trimmed[i] === "}") depth--;
+    if (depth === 0) {
+      try {
+        return JSON.parse(trimmed.slice(start, i + 1));
+      } catch {
+        return null;
+      }
+    }
+  }
+  return null;
 }
 
 async function fetchArticlesForCuration(batchId: string): Promise<Article[]> {
@@ -98,8 +117,13 @@ export async function curateArticles(batchId: string): Promise<{ scored: number;
       const textBlock = response.content.find((b) => b.type === "text");
       if (!textBlock || textBlock.type !== "text") continue;
 
-      const parsed = JSON.parse(extractJSON(textBlock.text));
-      const analyses: CurationAnalysis[] = parsed.analyses || [];
+      const parsed = safeParseJSON(textBlock.text);
+      if (!parsed) {
+        console.error("[curator] Failed to parse curation response. Preview:", textBlock.text.slice(0, 200));
+        totalFailed += batch.length;
+        continue;
+      }
+      const analyses: CurationAnalysis[] = (parsed.analyses as CurationAnalysis[]) || [];
 
       for (const analysis of analyses) {
         const article = batch[analysis.index];
@@ -203,8 +227,12 @@ export async function deepCurateArticles(batchId: string): Promise<void> {
       const textBlock = response.content.find((b) => b.type === "text");
       if (!textBlock || textBlock.type !== "text") continue;
 
-      const parsed = JSON.parse(extractJSON(textBlock.text));
-      const analyses: DeepAnalysis[] = parsed.analyses || [];
+      const parsed = safeParseJSON(textBlock.text);
+      if (!parsed) {
+        console.error("[curator] Failed to parse deep curation response. Preview:", textBlock.text.slice(0, 200));
+        continue;
+      }
+      const analyses: DeepAnalysis[] = (parsed.analyses as DeepAnalysis[]) || [];
 
       for (const analysis of analyses) {
         const article = batch[analysis.index];

@@ -6,9 +6,21 @@ import type { Article, Trend } from "./supabase";
 
 const anthropic = new Anthropic();
 
-function extractJSON(text: string): string {
-  const match = text.match(/\{[\s\S]*\}/);
-  return match ? match[0] : "{}";
+function safeParseJSON(text: string): Record<string, unknown> | null {
+  const trimmed = text.trim();
+  try { return JSON.parse(trimmed); } catch { /* fallback */ }
+  const start = trimmed.indexOf("{");
+  if (start === -1) return null;
+  let depth = 0;
+  for (let i = start; i < trimmed.length; i++) {
+    if (trimmed[i] === "{") depth++;
+    else if (trimmed[i] === "}") depth--;
+    if (depth === 0) {
+      try { return JSON.parse(trimmed.slice(start, i + 1)); }
+      catch { return null; }
+    }
+  }
+  return null;
 }
 
 interface RawTrend {
@@ -64,8 +76,12 @@ export async function detectTrends(
       return { trends: [], summary: "트렌드 분석 실패" };
     }
 
-    const parsed = JSON.parse(extractJSON(textBlock.text));
-    const rawTrends: RawTrend[] = parsed.trends || [];
+    const parsed = safeParseJSON(textBlock.text);
+    if (!parsed) {
+      console.error("[trend-detector] Failed to parse response. Preview:", textBlock.text.slice(0, 200));
+      return { trends: [], summary: "트렌드 분석 JSON 파싱 실패" };
+    }
+    const rawTrends: RawTrend[] = (parsed.trends as RawTrend[]) || [];
 
     // Map indices to article IDs and save to DB
     const trends: Trend[] = [];
