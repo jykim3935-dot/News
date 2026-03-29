@@ -38,7 +38,7 @@ export async function runPipeline(
 
   try {
     // Step 1: Collect (5 collectors in parallel)
-    console.log("[pipeline] Step 1/7: Collecting (5 collectors)...");
+    console.log("[pipeline] Step 1/8: Collecting (5 collectors)...");
     const collected = await collectAll(batchId);
     console.log(`[pipeline] Collected ${collected.length} articles`);
 

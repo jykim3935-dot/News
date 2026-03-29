@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useToast } from "@/components/Toast";
 import type { KeywordGroup, Category, ContentType } from "@/lib/supabase";
 import { CATEGORIES, CONTENT_TYPES } from "@/lib/supabase";
 
@@ -83,11 +84,14 @@ const CONTENT_TYPE_LABELS: Record<string, string> = {
 };
 
 export default function KeywordsManager() {
+  const { toast } = useToast();
   const [groups, setGroups] = useState<KeywordGroup[]>([]);
   const [loading, setLoading] = useState(true);
+  const [dbError, setDbError] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [showPresets, setShowPresets] = useState(false);
+  const [addingPresets, setAddingPresets] = useState(false);
   const [aiQuery, setAiQuery] = useState("");
   const [aiSuggestions, setAiSuggestions] = useState<{ group_name: string; category: Category; content_types: ContentType[]; priority: number; keywords: string[]; enabled: boolean }[]>([]);
   const [aiLoading, setAiLoading] = useState(false);
@@ -102,9 +106,20 @@ export default function KeywordsManager() {
   });
 
   const fetchGroups = async () => {
-    const res = await fetch("/api/keywords");
-    const data = await res.json();
-    setGroups(data);
+    try {
+      const res = await fetch("/api/keywords");
+      const data = await res.json();
+      if (data.error) {
+        setDbError(data.error);
+        setGroups([]);
+      } else {
+        setDbError(null);
+        setGroups(Array.isArray(data) ? data : []);
+      }
+    } catch (err) {
+      setDbError("서버 연결 실패: " + (err instanceof Error ? err.message : String(err)));
+      setGroups([]);
+    }
     setLoading(false);
   };
 
@@ -123,9 +138,19 @@ export default function KeywordsManager() {
     };
     const method = editId ? "PATCH" : "POST";
     const url = editId ? `/api/keywords/${editId}` : "/api/keywords";
-    await fetch(url, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
-    resetForm();
-    fetchGroups();
+    try {
+      const res = await fetch(url, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+      const data = await res.json();
+      if (data.error) {
+        toast(`저장 실패: ${data.error}`, "error");
+        return;
+      }
+      toast(editId ? "키워드 그룹 수정 완료" : "키워드 그룹 추가 완료", "success");
+      resetForm();
+      fetchGroups();
+    } catch (err) {
+      toast(`저장 실패: ${err instanceof Error ? err.message : String(err)}`, "error");
+    }
   };
 
   const handleEdit = (g: KeywordGroup) => {
@@ -165,28 +190,53 @@ export default function KeywordsManager() {
     }));
   };
 
+  const addKeywordGroup = async (body: Record<string, unknown>): Promise<boolean> => {
+    try {
+      const res = await fetch("/api/keywords", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json();
+      if (data.error) {
+        toast(`추가 실패: ${data.error}`, "error");
+        return false;
+      }
+      return true;
+    } catch (err) {
+      toast(`추가 실패: ${err instanceof Error ? err.message : String(err)}`, "error");
+      return false;
+    }
+  };
+
   const handleAddPreset = async (preset: typeof PRESET_KEYWORD_GROUPS[number]) => {
     const exists = groups.some((g) => g.group_name === preset.group_name);
-    if (exists) return;
-    await fetch("/api/keywords", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(preset),
-    });
-    fetchGroups();
+    if (exists) {
+      toast(`"${preset.group_name}"은 이미 추가되어 있습니다.`, "info");
+      return;
+    }
+    const ok = await addKeywordGroup(preset);
+    if (ok) {
+      toast(`"${preset.group_name}" 추가 완료`, "success");
+      fetchGroups();
+    }
   };
 
   const handleAddAllPresets = async () => {
+    setAddingPresets(true);
+    let added = 0;
+    let failed = 0;
     for (const preset of PRESET_KEYWORD_GROUPS) {
       const exists = groups.some((g) => g.group_name === preset.group_name);
-      if (!exists) {
-        await fetch("/api/keywords", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(preset),
-        });
-      }
+      if (exists) continue;
+      const ok = await addKeywordGroup(preset);
+      if (ok) added++;
+      else failed++;
     }
+    setAddingPresets(false);
+    if (added > 0) toast(`${added}개 키워드 그룹 추가 완료${failed > 0 ? `, ${failed}개 실패` : ""}`, added > 0 ? "success" : "error");
+    else if (failed > 0) toast(`${failed}개 키워드 그룹 추가 실패`, "error");
+    else toast("추가할 새 키워드 그룹이 없습니다.", "info");
     setShowPresets(false);
     fetchGroups();
   };
@@ -202,35 +252,41 @@ export default function KeywordsManager() {
         body: JSON.stringify({ query: aiQuery, type: "keywords" }),
       });
       const data = await res.json();
-      setAiSuggestions(data.suggestions || []);
-    } catch {
-      console.error("AI suggestion failed");
+      if (data.error) {
+        toast(`AI 추천 실패: ${data.error}`, "error");
+      } else {
+        const suggestions = data.suggestions || [];
+        setAiSuggestions(suggestions);
+        if (suggestions.length === 0) toast("추천 결과가 없습니다.", "info");
+      }
+    } catch (err) {
+      toast(`AI 추천 실패: ${err instanceof Error ? err.message : String(err)}`, "error");
     }
     setAiLoading(false);
   };
 
   const handleAddAiSuggestion = async (suggestion: typeof aiSuggestions[number]) => {
     const exists = groups.some((g) => g.group_name === suggestion.group_name);
-    if (exists) return;
-    await fetch("/api/keywords", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(suggestion),
-    });
-    fetchGroups();
+    if (exists) {
+      toast("이미 추가된 키워드 그룹입니다.", "info");
+      return;
+    }
+    const ok = await addKeywordGroup(suggestion);
+    if (ok) {
+      toast(`"${suggestion.group_name}" 추가 완료`, "success");
+      fetchGroups();
+    }
   };
 
   const handleAddAllAiSuggestions = async () => {
+    let added = 0;
     for (const s of aiSuggestions) {
       const exists = groups.some((g) => g.group_name === s.group_name);
-      if (!exists) {
-        await fetch("/api/keywords", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(s),
-        });
-      }
+      if (exists) continue;
+      const ok = await addKeywordGroup(s);
+      if (ok) added++;
     }
+    toast(`${added}개 AI 추천 키워드 추가 완료`, added > 0 ? "success" : "info");
     setAiSuggestions([]);
     setShowAi(false);
     fetchGroups();
@@ -261,6 +317,17 @@ export default function KeywordsManager() {
           </button>
         </div>
       </div>
+
+      {/* DB Error Banner */}
+      {dbError && (
+        <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+          <div className="text-sm font-semibold text-red-800">DB 연결 오류</div>
+          <div className="text-xs text-red-600 mt-1">{dbError}</div>
+          <div className="text-xs text-red-500 mt-2">
+            Supabase SQL Editor에서 schema.sql → schema-v2.sql → schema-v3-production.sql 순서로 실행하세요.
+          </div>
+        </div>
+      )}
 
       {/* AI Suggestion Panel */}
       {showAi && (
@@ -339,9 +406,10 @@ export default function KeywordsManager() {
             <h4 className="text-sm font-semibold text-blue-900">추천 키워드 프리셋</h4>
             <button
               onClick={handleAddAllPresets}
-              className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs"
+              disabled={addingPresets}
+              className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs disabled:opacity-50"
             >
-              전체 추가
+              {addingPresets ? "추가 중..." : "전체 추가"}
             </button>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">

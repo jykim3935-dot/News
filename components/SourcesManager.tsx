@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useToast } from "@/components/Toast";
 import type { Source, ContentType, Category, SourceType } from "@/lib/supabase";
 import { CONTENT_TYPES, CATEGORIES } from "@/lib/supabase";
 
@@ -31,11 +32,14 @@ const PRESET_SOURCES: Omit<Source, "id" | "created_at">[] = [
 ];
 
 export default function SourcesManager() {
+  const { toast } = useToast();
   const [sources, setSources] = useState<Source[]>([]);
   const [loading, setLoading] = useState(true);
+  const [dbError, setDbError] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [showPresets, setShowPresets] = useState(false);
+  const [addingPresets, setAddingPresets] = useState(false);
   const [aiQuery, setAiQuery] = useState("");
   const [aiSuggestions, setAiSuggestions] = useState<Omit<Source, "id" | "created_at">[]>([]);
   const [aiLoading, setAiLoading] = useState(false);
@@ -51,9 +55,20 @@ export default function SourcesManager() {
   });
 
   const fetchSources = async () => {
-    const res = await fetch("/api/sources");
-    const data = await res.json();
-    setSources(data);
+    try {
+      const res = await fetch("/api/sources");
+      const data = await res.json();
+      if (data.error) {
+        setDbError(data.error);
+        setSources([]);
+      } else {
+        setDbError(null);
+        setSources(Array.isArray(data) ? data : []);
+      }
+    } catch (err) {
+      setDbError("서버 연결 실패: " + (err instanceof Error ? err.message : String(err)));
+      setSources([]);
+    }
     setLoading(false);
   };
 
@@ -68,9 +83,19 @@ export default function SourcesManager() {
   const handleSubmit = async () => {
     const method = editId ? "PATCH" : "POST";
     const url = editId ? `/api/sources/${editId}` : "/api/sources";
-    await fetch(url, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(form) });
-    resetForm();
-    fetchSources();
+    try {
+      const res = await fetch(url, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(form) });
+      const data = await res.json();
+      if (data.error) {
+        toast(`소스 저장 실패: ${data.error}`, "error");
+        return;
+      }
+      toast(editId ? "소스 수정 완료" : "소스 추가 완료", "success");
+      resetForm();
+      fetchSources();
+    } catch (err) {
+      toast(`소스 저장 실패: ${err instanceof Error ? err.message : String(err)}`, "error");
+    }
   };
 
   const handleEdit = (source: Source) => {
@@ -102,28 +127,53 @@ export default function SourcesManager() {
     fetchSources();
   };
 
+  const addSource = async (body: Record<string, unknown>): Promise<boolean> => {
+    try {
+      const res = await fetch("/api/sources", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json();
+      if (data.error) {
+        toast(`추가 실패: ${data.error}`, "error");
+        return false;
+      }
+      return true;
+    } catch (err) {
+      toast(`추가 실패: ${err instanceof Error ? err.message : String(err)}`, "error");
+      return false;
+    }
+  };
+
   const handleAddPreset = async (preset: typeof PRESET_SOURCES[number]) => {
     const exists = sources.some((s) => s.name === preset.name);
-    if (exists) return;
-    await fetch("/api/sources", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(preset),
-    });
-    fetchSources();
+    if (exists) {
+      toast(`"${preset.name}"은 이미 추가되어 있습니다.`, "info");
+      return;
+    }
+    const ok = await addSource(preset);
+    if (ok) {
+      toast(`"${preset.name}" 추가 완료`, "success");
+      fetchSources();
+    }
   };
 
   const handleAddAllPresets = async () => {
+    setAddingPresets(true);
+    let added = 0;
+    let failed = 0;
     for (const preset of PRESET_SOURCES) {
       const exists = sources.some((s) => s.name === preset.name);
-      if (!exists) {
-        await fetch("/api/sources", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(preset),
-        });
-      }
+      if (exists) continue;
+      const ok = await addSource(preset);
+      if (ok) added++;
+      else failed++;
     }
+    setAddingPresets(false);
+    if (added > 0) toast(`${added}개 소스 추가 완료${failed > 0 ? `, ${failed}개 실패` : ""}`, added > 0 ? "success" : "error");
+    else if (failed > 0) toast(`${failed}개 소스 추가 실패`, "error");
+    else toast("추가할 새 소스가 없습니다.", "info");
     setShowPresets(false);
     fetchSources();
   };
@@ -139,35 +189,41 @@ export default function SourcesManager() {
         body: JSON.stringify({ query: aiQuery, type: "sources" }),
       });
       const data = await res.json();
-      setAiSuggestions(data.suggestions || []);
-    } catch {
-      console.error("AI suggestion failed");
+      if (data.error) {
+        toast(`AI 추천 실패: ${data.error}`, "error");
+      } else {
+        const suggestions = data.suggestions || [];
+        setAiSuggestions(suggestions);
+        if (suggestions.length === 0) toast("추천 결과가 없습니다.", "info");
+      }
+    } catch (err) {
+      toast(`AI 추천 실패: ${err instanceof Error ? err.message : String(err)}`, "error");
     }
     setAiLoading(false);
   };
 
   const handleAddAiSuggestion = async (suggestion: Omit<Source, "id" | "created_at">) => {
     const exists = sources.some((s) => s.name === suggestion.name || s.url === suggestion.url);
-    if (exists) return;
-    await fetch("/api/sources", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(suggestion),
-    });
-    fetchSources();
+    if (exists) {
+      toast("이미 추가된 소스입니다.", "info");
+      return;
+    }
+    const ok = await addSource(suggestion);
+    if (ok) {
+      toast(`"${suggestion.name}" 추가 완료`, "success");
+      fetchSources();
+    }
   };
 
   const handleAddAllAiSuggestions = async () => {
+    let added = 0;
     for (const s of aiSuggestions) {
       const exists = sources.some((src) => src.name === s.name || src.url === s.url);
-      if (!exists) {
-        await fetch("/api/sources", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(s),
-        });
-      }
+      if (exists) continue;
+      const ok = await addSource(s);
+      if (ok) added++;
     }
+    toast(`${added}개 AI 추천 소스 추가 완료`, added > 0 ? "success" : "info");
     setAiSuggestions([]);
     setShowAi(false);
     fetchSources();
@@ -198,6 +254,17 @@ export default function SourcesManager() {
           </button>
         </div>
       </div>
+
+      {/* DB Error Banner */}
+      {dbError && (
+        <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+          <div className="text-sm font-semibold text-red-800">DB 연결 오류</div>
+          <div className="text-xs text-red-600 mt-1">{dbError}</div>
+          <div className="text-xs text-red-500 mt-2">
+            Supabase SQL Editor에서 schema.sql → schema-v2.sql → schema-v3-production.sql 순서로 실행하세요.
+          </div>
+        </div>
+      )}
 
       {/* AI Suggestion Panel */}
       {showAi && (
@@ -267,9 +334,10 @@ export default function SourcesManager() {
             <h4 className="text-sm font-semibold text-blue-900">추천 소스 프리셋</h4>
             <button
               onClick={handleAddAllPresets}
-              className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs"
+              disabled={addingPresets}
+              className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs disabled:opacity-50"
             >
-              전체 추가
+              {addingPresets ? "추가 중..." : "전체 추가"}
             </button>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
