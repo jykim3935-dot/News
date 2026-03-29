@@ -2,9 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 import { localStore } from "@/lib/local-store";
 import { renderNewsletter } from "@/lib/newsletter";
+import { generateExecutiveBrief } from "@/lib/executive-brief";
 import type { Article, Trend, PipelineRun } from "@/lib/supabase";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 60;
 
 function htmlResponse(html: string) {
   return new NextResponse(html, {
@@ -25,19 +27,54 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const articles: Article[] = body.articles || [];
-    const executiveBrief: string | undefined = body.executiveBrief;
+    let executiveBrief: string = body.executiveBrief || "";
     const trends: Trend[] = body.trends || [];
+    const runId: string | null = body.runId || null;
 
-    if (articles.length === 0) return emptyPage();
+    if (articles.length === 0) {
+      return NextResponse.json({ html: "", executiveBrief: "" });
+    }
+
+    // If no brief available, generate on-the-fly
+    let briefGenerated = false;
+    if (!executiveBrief.trim() && articles.length > 0) {
+      console.log("[preview] No brief found, generating on-the-fly...");
+      try {
+        executiveBrief = await generateExecutiveBrief(articles);
+        briefGenerated = true;
+        console.log("[preview] Brief generated, length:", executiveBrief.length);
+
+        // Fire-and-forget: save to DB for future use
+        if (executiveBrief && runId && isSupabaseConfigured()) {
+          (async () => {
+            try {
+              await supabase
+                .from("pipeline_runs")
+                .update({ executive_brief: executiveBrief })
+                .eq("id", runId);
+              console.log("[preview] Brief saved to DB");
+            } catch (err) {
+              console.error("[preview] Failed to save brief:", err);
+            }
+          })();
+        }
+      } catch (e) {
+        console.error("[preview] Brief generation failed:", e);
+      }
+    }
 
     const date = new Date().toLocaleDateString("ko-KR", {
       year: "numeric", month: "long", day: "numeric", weekday: "long",
     });
 
     const html = renderNewsletter({ articles, date, executiveBrief, trends });
-    return htmlResponse(html);
+
+    return NextResponse.json({
+      html,
+      executiveBrief: briefGenerated ? executiveBrief : undefined,
+    });
   } catch {
-    return emptyPage();
+    return NextResponse.json({ html: "", executiveBrief: "" });
   }
 }
 
@@ -92,6 +129,20 @@ export async function GET() {
 
   if (!run || articles.length === 0) return emptyPage();
 
+  // Generate brief on-the-fly if missing
+  let executiveBrief = run.executive_brief || "";
+  if (!executiveBrief && articles.length > 0) {
+    try {
+      executiveBrief = await generateExecutiveBrief(articles);
+      if (executiveBrief && isSupabaseConfigured()) {
+        supabase
+          .from("pipeline_runs")
+          .update({ executive_brief: executiveBrief })
+          .eq("id", run.id);
+      }
+    } catch { /* proceed without brief */ }
+  }
+
   const date = new Date(run.completed_at || run.started_at || run.created_at).toLocaleDateString(
     "ko-KR",
     { year: "numeric", month: "long", day: "numeric", weekday: "long" }
@@ -100,7 +151,7 @@ export async function GET() {
   const html = renderNewsletter({
     articles,
     date,
-    executiveBrief: run.executive_brief || undefined,
+    executiveBrief: executiveBrief || undefined,
     trends,
   });
 

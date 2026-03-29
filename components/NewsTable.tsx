@@ -43,6 +43,8 @@ export default function NewsTable() {
   const [trends, setTrends] = useState<Trend[]>([]);
   const [sortKey, setSortKey] = useState<"relevance_score" | "urgency" | "content_type">("relevance_score");
   const [sortAsc, setSortAsc] = useState(false);
+  const [runId, setRunId] = useState<string | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
   const { toast } = useToast();
 
   const fetchArticles = async () => {
@@ -53,6 +55,7 @@ export default function NewsTable() {
       setArticles(data.articles || []);
       setExecutiveBrief(data.executiveBrief || "");
       setTrends(data.trends || []);
+      setRunId(data.run?.id || null);
     } catch {
       console.error("Failed to fetch articles");
     }
@@ -96,13 +99,24 @@ export default function NewsTable() {
   };
 
   const openPreview = async () => {
+    setPreviewLoading(true);
     try {
       const res = await fetch("/api/newsletter/preview", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ articles, executiveBrief, trends }),
+        body: JSON.stringify({ articles, executiveBrief, trends, runId }),
       });
-      const html = await res.text();
+      const data = await res.json();
+      const html = data.html || "";
+      if (!html) {
+        toast("미리보기 생성 실패: 빈 응답", "error");
+        setPreviewLoading(false);
+        return;
+      }
+      // Update brief state if newly generated server-side
+      if (data.executiveBrief) {
+        setExecutiveBrief(data.executiveBrief);
+      }
       const blob = new Blob([html], { type: "text/html" });
       const url = URL.createObjectURL(blob);
       if (previewUrl) URL.revokeObjectURL(previewUrl);
@@ -111,6 +125,7 @@ export default function NewsTable() {
     } catch {
       toast("미리보기 생성 실패", "error");
     }
+    setPreviewLoading(false);
   };
 
   const closePreview = () => {
@@ -183,9 +198,10 @@ export default function NewsTable() {
           {total > 0 && (
             <button
               onClick={openPreview}
-              className="flex-1 sm:flex-none px-3 sm:px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-xs sm:text-sm font-medium transition border border-gray-200"
+              disabled={previewLoading}
+              className="flex-1 sm:flex-none px-3 sm:px-4 py-2 bg-gray-100 hover:bg-gray-200 disabled:bg-gray-50 text-gray-700 disabled:text-gray-400 rounded-lg text-xs sm:text-sm font-medium transition border border-gray-200"
             >
-              📧 미리보기
+              {previewLoading ? "AI 요약 생성 중..." : "📧 미리보기"}
             </button>
           )}
           <button
