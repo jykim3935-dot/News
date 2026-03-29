@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import NewsTable from "@/components/NewsTable";
 import SourcesManager from "@/components/SourcesManager";
 import KeywordsManager from "@/components/KeywordsManager";
@@ -19,18 +19,45 @@ type TabId = (typeof TABS)[number]["id"];
 
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState<TabId>("preview");
+  const [applyingPresets, setApplyingPresets] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  const applyAllPresets = useCallback(async () => {
+    if (applyingPresets) return;
+    setApplyingPresets(true);
+    try {
+      const res = await fetch("/api/presets/apply", { method: "POST" });
+      const data = await res.json();
+      const msg = `소스: ${data.sources.added}개 추가 (${data.sources.skipped}개 기존), 키워드: ${data.keywords.added}개 추가 (${data.keywords.skipped}개 기존)`;
+      alert(data.success ? `프리셋 반영 완료!\n${msg}` : `일부 오류 발생\n${msg}\n${[...data.sources.errors, ...data.keywords.errors].join("\n")}`);
+      setRefreshKey((k) => k + 1);
+    } catch (err) {
+      alert("프리셋 반영 실패: " + (err instanceof Error ? err.message : String(err)));
+    } finally {
+      setApplyingPresets(false);
+    }
+  }, [applyingPresets]);
 
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <header className="border-b border-gray-200 bg-white sticky top-0 z-10 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 sm:py-4">
-          <h1 className="text-lg sm:text-2xl font-bold text-gray-900">
-            ACRYL Intelligence Brief
-          </h1>
-          <p className="text-xs sm:text-sm text-gray-500 mt-0.5">
-            AI 기반 경영정보 뉴스레터 관리자 대시보드
-          </p>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between">
+          <div>
+            <h1 className="text-lg sm:text-2xl font-bold text-gray-900">
+              ACRYL Intelligence Brief
+            </h1>
+            <p className="text-xs sm:text-sm text-gray-500 mt-0.5">
+              AI 기반 경영정보 뉴스레터 관리자 대시보드
+            </p>
+          </div>
+          <button
+            onClick={applyAllPresets}
+            disabled={applyingPresets}
+            className="px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-400 rounded-lg transition whitespace-nowrap"
+          >
+            {applyingPresets ? "반영 중..." : "프리셋 전체 반영"}
+          </button>
         </div>
       </header>
 
@@ -60,8 +87,8 @@ export default function Dashboard() {
       {/* Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-6">
         {activeTab === "preview" && <NewsTable />}
-        {activeTab === "sources" && <SourcesManager />}
-        {activeTab === "keywords" && <KeywordsManager />}
+        {activeTab === "sources" && <SourcesManager key={`sources-${refreshKey}`} />}
+        {activeTab === "keywords" && <KeywordsManager key={`keywords-${refreshKey}`} />}
         {activeTab === "recipients" && <RecipientsManager />}
         {activeTab === "logs" && <PipelineLogs />}
       </main>
