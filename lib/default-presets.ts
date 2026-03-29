@@ -43,6 +43,17 @@ export const DEFAULT_SOURCES: PresetSource[] = [
   { name: "McKinsey AI", url: "https://www.mckinsey.com/capabilities/quantumblack/our-insights/rss", type: "rss", content_type: "consulting", category: "market", description: "AI 전략/시장", enabled: true },
   { name: "a16z Blog", url: "https://a16z.com/feed/", type: "rss", content_type: "consulting", category: "investment", description: "AI 투자/인프라 관점", enabled: true },
 
+  // ── 추가 글로벌 RSS ──
+  { name: "Hacker News AI", url: "https://hnrss.org/best?q=AI+GPU+LLM", type: "rss", content_type: "global", category: "tech", description: "HN AI/GPU/LLM 인기글", enabled: true },
+  { name: "AWS ML Blog", url: "https://aws.amazon.com/blogs/machine-learning/feed/", type: "rss", content_type: "blog", category: "tech", description: "AWS 머신러닝 블로그", enabled: true },
+  { name: "Meta AI Blog", url: "https://ai.meta.com/blog/rss/", type: "rss", content_type: "blog", category: "tech", description: "Meta AI 연구 블로그", enabled: true },
+  { name: "Microsoft AI Blog", url: "https://blogs.microsoft.com/ai/feed/", type: "rss", content_type: "blog", category: "tech", description: "Microsoft AI 블로그", enabled: true },
+
+  // ── 추가 국내 RSS ──
+  { name: "조선비즈 IT", url: "https://biz.chosun.com/rss/biz_it.xml", type: "rss", content_type: "news", category: "tech", description: "조선비즈 IT/과학", enabled: true },
+  { name: "서울경제 IT", url: "https://www.sedaily.com/RSS/IT", type: "rss", content_type: "news", category: "market", description: "서울경제 IT 섹션", enabled: true },
+  { name: "디지털데일리", url: "https://www.ddaily.co.kr/rss/S01.xml", type: "rss", content_type: "news", category: "tech", description: "IT/전자/인터넷 전문", enabled: true },
+
   // ── 투자/IR ──
   { name: "한국거래소 공시", url: "https://kind.krx.co.kr/disclosure/todaydisclosure.do?method=searchTodayDisclosureRss", type: "rss", content_type: "investment", category: "investment", description: "KOSDAQ 공시", enabled: true },
 
@@ -89,7 +100,7 @@ export const DEFAULT_KEYWORD_GROUPS: PresetKeywordGroup[] = [
     category: "tech",
     content_types: ["news", "research", "blog", "global"],
     priority: 1,
-    keywords: ["GPU 클라우드", "GPU-as-a-Service", "GPU 오케스트레이션", "GPU 클러스터", "GPUBASE", "H100", "B200", "GPU 가상화", "GPU sharing", "MIG", "GPU pool", "cloud GPU"],
+    keywords: ["GPU 클라우드", "GPU-as-a-Service", "GPU 오케스트레이션", "GPU 클러스터", "GPUBASE", "H100", "B200", "GPU 가상화", "GPU sharing", "MIG", "GPU pool", "cloud GPU", "Blackwell", "GB200", "DGX Cloud", "InfiniBand"],
     enabled: true,
   },
   {
@@ -97,7 +108,7 @@ export const DEFAULT_KEYWORD_GROUPS: PresetKeywordGroup[] = [
     category: "tech",
     content_types: ["news", "research", "blog", "global"],
     priority: 1,
-    keywords: ["AI 에이전트", "AI agent", "MCP", "Model Context Protocol", "AGENTBASE", "멀티에이전트", "agentic AI", "function calling", "tool use", "agent orchestration", "agent framework"],
+    keywords: ["AI 에이전트", "AI agent", "MCP", "Model Context Protocol", "AGENTBASE", "멀티에이전트", "agentic AI", "function calling", "tool use", "agent orchestration", "agent framework", "A2A", "agent-to-agent", "Claude Code", "Cursor AI", "Windsurf"],
     enabled: true,
   },
   {
@@ -105,7 +116,7 @@ export const DEFAULT_KEYWORD_GROUPS: PresetKeywordGroup[] = [
     category: "tech",
     content_types: ["news", "research", "blog"],
     priority: 1,
-    keywords: ["MLOps", "모델 서빙", "inference optimization", "FLIGHTBASE", "vLLM", "TensorRT", "model serving", "LLM 배포", "TGI", "inference engine", "LLM inference", "서빙 최적화"],
+    keywords: ["MLOps", "모델 서빙", "inference optimization", "FLIGHTBASE", "vLLM", "TensorRT", "model serving", "LLM 배포", "TGI", "inference engine", "LLM inference", "서빙 최적화", "KServe", "Triton Inference Server", "ONNX Runtime", "Ollama"],
     enabled: true,
   },
   {
@@ -129,7 +140,7 @@ export const DEFAULT_KEYWORD_GROUPS: PresetKeywordGroup[] = [
     category: "market",
     content_types: ["news", "research", "global"],
     priority: 1,
-    keywords: ["의료 AI", "피부질환 AI", "AI 진단", "디지털 헬스케어", "NADIA", "FDA AI", "의료기기 AI", "SaMD", "digital therapeutics", "AI 병리", "헬스케어 SaaS"],
+    keywords: ["의료 AI", "피부질환 AI", "AI 진단", "디지털 헬스케어", "NADIA", "FDA AI", "의료기기 AI", "SaMD", "digital therapeutics", "AI 병리", "헬스케어 SaaS", "AI 신약개발", "방사선 AI", "의료영상 AI"],
     enabled: true,
   },
   {
@@ -155,7 +166,7 @@ export const DEFAULT_KEYWORD_GROUPS: PresetKeywordGroup[] = [
     category: "tech",
     content_types: ["news", "report", "global"],
     priority: 2,
-    keywords: ["AI 반도체", "NVIDIA", "AMD MI300", "HBM", "AI 가속기", "Blackwell", "AI ASIC", "Groq", "Cerebras", "Intel Gaudi", "NPU", "AI 칩"],
+    keywords: ["AI 반도체", "NVIDIA", "AMD MI300", "HBM", "AI 가속기", "Blackwell", "AI ASIC", "Groq", "Cerebras", "Intel Gaudi", "NPU", "AI 칩", "CoWoS", "Blackwell Ultra", "MI350"],
     enabled: true,
   },
   {

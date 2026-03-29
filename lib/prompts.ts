@@ -166,8 +166,8 @@ ${ACRYL_CONTEXT}
 - category: competitive(경쟁), market(시장), regulation(규제), tech(기술), customer(고객), investment(투자)
 - content_type: news, report, consulting, global, investment, blog, government, research
 - impact_comment: "ACRYL에 무슨 의미인가" + 구체적 액션 시사점 (한국어, 1-2문장)
-- title_ko: 영어 제목은 자연스러운 한글로 번역. 한글이면 원문 그대로.
-- summary_ko: 영어 내용은 한글로 번역 요약. 한글이면 핵심만 2-3문장으로 다듬기.
+- title_ko: **필수** — 영어 제목은 반드시 자연스러운 한글로 번역. 한글이면 원문 그대로. 빈 문자열/null 금지.
+- summary_ko: **필수** — 영어 기사는 반드시 한글로 번역하여 2-3문장 요약. 한글이면 핵심만 다듬기. 빈 문자열/null 금지.
 - dedup_group: 동일 사건/주제 기사들에 같은 그룹명. 관련도가 가장 높은 기사를 대표로 표시.
 
 JSON만 반환하세요.

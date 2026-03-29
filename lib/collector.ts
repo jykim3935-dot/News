@@ -6,19 +6,54 @@ import { collectViaRSS } from "./collector-rss";
 import { collectViaDart } from "./collector-dart";
 import { collectGovPolicy } from "./collector-gov";
 import { collectResearch } from "./collector-research";
-import crypto from "crypto";
+import { collectViaGoogleNews } from "./collector-google-news";
+
+/**
+ * Normalize URL for dedup: remove query params, trailing slash, fragment
+ */
+function normalizeUrl(url: string): string {
+  try {
+    const u = new URL(url);
+    u.search = "";
+    u.hash = "";
+    const path = u.pathname.replace(/\/+$/, "");
+    return `${u.hostname.toLowerCase()}${path}`;
+  } catch {
+    return url.toLowerCase().trim();
+  }
+}
+
+/**
+ * Normalize title for dedup: remove spaces/punctuation, lowercase, first 60 chars
+ */
+function normalizeTitle(title: string): string {
+  return title
+    .toLowerCase()
+    .replace(/[\s\-_:;,.!?'"()\[\]{}|\/\\@#$%^&*+=~`<>]/g, "")
+    .slice(0, 60);
+}
 
 function deduplicateArticles(
   articles: Partial<Article>[]
 ): Partial<Article>[] {
-  const seen = new Set<string>();
+  const seenUrls = new Set<string>();
+  const seenTitles = new Set<string>();
+
   return articles.filter((a) => {
-    const key = crypto
-      .createHash("md5")
-      .update((a.title || "").slice(0, 40))
-      .digest("hex");
-    if (seen.has(key)) return false;
-    seen.add(key);
+    // URL-based dedup
+    if (a.url) {
+      const normUrl = normalizeUrl(a.url);
+      if (seenUrls.has(normUrl)) return false;
+      seenUrls.add(normUrl);
+    }
+
+    // Title-based dedup
+    const normTitle = normalizeTitle(a.title || "");
+    if (normTitle.length > 5) {
+      if (seenTitles.has(normTitle)) return false;
+      seenTitles.add(normTitle);
+    }
+
     return true;
   });
 }
@@ -26,22 +61,23 @@ function deduplicateArticles(
 export async function collectAll(
   batchId: string
 ): Promise<Partial<Article>[]> {
-  console.log("[collector] Starting collection (5 collectors)...");
+  console.log("[collector] Starting collection (6 collectors)...");
 
-  // Run all 5 collectors in parallel
-  const [webArticles, rssArticles, dartArticles, govArticles, researchArticles] =
+  // Run all 6 collectors in parallel
+  const [webArticles, rssArticles, dartArticles, govArticles, researchArticles, googleNewsArticles] =
     await Promise.allSettled([
       collectViaWebSearch(batchId),
       collectViaRSS(batchId),
       collectViaDart(batchId),
       collectGovPolicy(batchId),
       collectResearch(batchId),
+      collectViaGoogleNews(batchId),
     ]).then((results) =>
       results.map((r) => (r.status === "fulfilled" ? r.value : []))
     );
 
   console.log(
-    `[collector] Web: ${webArticles.length}, RSS: ${rssArticles.length}, DART: ${dartArticles.length}, Gov: ${govArticles.length}, Research: ${researchArticles.length}`
+    `[collector] Web: ${webArticles.length}, RSS: ${rssArticles.length}, DART: ${dartArticles.length}, Gov: ${govArticles.length}, Research: ${researchArticles.length}, GoogleNews: ${googleNewsArticles.length}`
   );
 
   // Combine and deduplicate
@@ -51,6 +87,7 @@ export async function collectAll(
     ...dartArticles,
     ...govArticles,
     ...researchArticles,
+    ...googleNewsArticles,
   ]);
 
   console.log(`[collector] After dedup: ${allArticles.length} articles`);
