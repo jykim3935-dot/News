@@ -14,7 +14,7 @@ const SAMPLE_ARTICLES: Article[] = [
     source_description: "ZDNet Korea는 국내 최대 IT/테크 전문 매체로 기업 IT 의사결정자들이 주요 독자층",
     key_findings: ["Blackwell Ultra FP8 추론 성능 2.5배 향상", "하드웨어 레벨 멀티테넌시 지원 강화", "국내 AI 인프라 기업 플랫폼 업데이트 돌입"],
     action_items: ["GPUBASE Blackwell Ultra 호환성 검증 TF 구성", "KT·삼성SDS에 신규 GPU 지원 로드맵 공유"],
-    batch_id: "demo", created_at: "2026-03-28",
+    batch_id: "demo", original_language: null, original_title: null, original_summary: null, created_at: "2026-03-28",
   },
   {
     id: "2", title: "제논(GenOn), 공공기관 AI 플랫폼 수주 100억원 돌파",
@@ -27,7 +27,7 @@ const SAMPLE_ARTICLES: Article[] = [
     source_description: "전자신문은 국내 IT/전자 산업 전문 일간지로 공공·기업 IT 조달 시장에 높은 영향력 보유",
     key_findings: ["제논 공공 수주 100억 돌파 (국방부, 국립중앙의료원, 한국전력)", "나라장터 혁신제품 수의계약 비중 40%", "GPU 클러스터 관리 솔루션 중심 확장"],
     action_items: ["공공부문 영업팀 긴급 대응 회의 소집", "제논 혁신제품 등록 현황 파악 및 ACRYL 차별화 포인트 정리"],
-    batch_id: "demo", created_at: "2026-03-28",
+    batch_id: "demo", original_language: null, original_title: null, original_summary: null, created_at: "2026-03-28",
   },
   {
     id: "3", title: "KT, 기업용 AI 에이전트 플랫폼 'KT Agentic' 출시",
@@ -37,7 +37,7 @@ const SAMPLE_ARTICLES: Article[] = [
     relevance_score: 8, urgency: "yellow",
     impact_comment: "주요 파트너 KT의 에이전트 플랫폼 출시. AGENTBASE와의 기술 연동/파트너십 확대 기회.",
     deep_summary: null, source_description: null, key_findings: [], action_items: [],
-    batch_id: "demo", created_at: "2026-03-28",
+    batch_id: "demo", original_language: null, original_title: null, original_summary: null, created_at: "2026-03-28",
   },
   {
     id: "4", title: "CoreWeave, $7.5B 시리즈 C 라운드 클로징…GPU 클라우드 경쟁 심화",
@@ -47,7 +47,7 @@ const SAMPLE_ARTICLES: Article[] = [
     relevance_score: 7, urgency: "yellow",
     impact_comment: "글로벌 GPU 클라우드 시장 경쟁 심화. GPUBASE의 차별화 포인트(오케스트레이션, 멀티클라우드) 강화 필요.",
     deep_summary: null, source_description: null, key_findings: [], action_items: [],
-    batch_id: "demo", created_at: "2026-03-28",
+    batch_id: "demo", original_language: null, original_title: null, original_summary: null, created_at: "2026-03-28",
   },
 
   // 📊 보고서
@@ -62,7 +62,7 @@ const SAMPLE_ARTICLES: Article[] = [
     source_description: "SPRi(SW정책연구소)는 과학기술정보통신부 산하 SW 정책 전문 연구기관으로 국내 SW/AI 시장 통계의 공신력 있는 출처",
     key_findings: ["국내 AI 인프라 시장 2026년 3.2조원 (YoY +52%)", "GPU 오케스트레이션 SW 시장 ~4,800억원 (전체 15%)", "공공부문 AI 인프라 투자 YoY +80%"],
     action_items: ["IR 발표자료에 SPRi 시장 규모 데이터 반영", "TAM 4,800억원 기준 시장점유율 목표 재설정"],
-    batch_id: "demo", created_at: "2026-03-28",
+    batch_id: "demo", original_language: null, original_title: null, original_summary: null, created_at: "2026-03-28",
   },
   {
     id: "7", title: "IITP 주간기술동향: MLOps 플랫폼 기술 동향 분석",
@@ -72,7 +72,7 @@ const SAMPLE_ARTICLES: Article[] = [
     relevance_score: 7, urgency: "green",
     impact_comment: "FLIGHTBASE MLOps 포지셔닝 참고 자료. 경쟁 제품 대비 차별화 포인트 정리에 활용.",
     deep_summary: null, source_description: null, key_findings: [], action_items: [],
-    batch_id: "demo", created_at: "2026-03-28",
+    batch_id: "demo", original_language: null, original_title: null, original_summary: null, created_at: "2026-03-28",
   },
 
   // 🎓 학술 & 리서치 (v2 신규)
@@ -87,7 +87,7 @@ const SAMPLE_ARTICLES: Article[] = [
     source_description: "arXiv는 코넬대학교 운영 오픈 액세스 논문 플랫폼으로, ML/AI 분야 최신 연구가 가장 빠르게 공개되는 채널",
     key_findings: ["이기종 GPU 클러스터 스케줄링 TAHS 알고리즘 제안", "기존 대비 GPU 활용률 25% 향상", "NVLink 토폴로지 고려 통신 최적화"],
     action_items: ["R&D팀에 TAHS 알고리즘 GPUBASE 적용 가능성 검토 요청", "논문 저자 컨택하여 기술 협력 가능성 탐색"],
-    batch_id: "demo", created_at: "2026-03-28",
+    batch_id: "demo", original_language: null, original_title: null, original_summary: null, created_at: "2026-03-28",
   },
   {
     id: "17", title: "MCP-Agent: A Unified Framework for Multi-Tool AI Agent Orchestration",
@@ -97,7 +97,7 @@ const SAMPLE_ARTICLES: Article[] = [
     relevance_score: 8, urgency: "yellow",
     impact_comment: "AGENTBASE의 MCP 네이티브 에이전트 오케스트레이션 기술과 직결. 최신 벤치마크 반영 검토.",
     deep_summary: null, source_description: null, key_findings: [], action_items: [],
-    batch_id: "demo", created_at: "2026-03-28",
+    batch_id: "demo", original_language: null, original_title: null, original_summary: null, created_at: "2026-03-28",
   },
 
   // 💼 컨설팅
@@ -111,7 +111,7 @@ const SAMPLE_ARTICLES: Article[] = [
     deep_summary: null, source_description: "Gartner는 IT 리서치·자문 분야 세계 1위 기관으로 Magic Quadrant 등 업계 표준 평가를 발행",
     key_findings: ["GPU 오케스트레이션 MQ 핵심 평가 항목 신규 추가", "Run:ai(NVIDIA 인수)가 Leaders 사분면 배치"],
     action_items: ["Gartner 분석가 브리핑 요청하여 GPUBASE 인지도 확보"],
-    batch_id: "demo", created_at: "2026-03-28",
+    batch_id: "demo", original_language: null, original_title: null, original_summary: null, created_at: "2026-03-28",
   },
   {
     id: "9", title: "IDC, 글로벌 GPU 서버 시장 2026년 $150B 전망",
@@ -121,7 +121,7 @@ const SAMPLE_ARTICLES: Article[] = [
     relevance_score: 7, urgency: "green",
     impact_comment: "IDC 시장 규모 데이터를 TAM/SAM 산출 및 IR 발표 자료에 활용.",
     deep_summary: null, source_description: null, key_findings: [], action_items: [],
-    batch_id: "demo", created_at: "2026-03-28",
+    batch_id: "demo", original_language: null, original_title: null, original_summary: null, created_at: "2026-03-28",
   },
 
   // 🏛️ 정부정책 (v2 신규)
@@ -136,7 +136,7 @@ const SAMPLE_ARTICLES: Article[] = [
     source_description: "과학기술정보통신부는 대한민국 과학기술·ICT 정책 수립 중앙행정기관으로 AI 정책의 최상위 의사결정 기관",
     key_findings: ["2026-2028 GPU 인프라 투자 2조원 확정", "국가 AI 컴퓨팅 센터 3곳 추가 구축 (세종/부산/광주)", "GPU 오케스트레이션 SW 혁신제품 카테고리 포함 → 수의계약 가능"],
     action_items: ["조달청 혁신제품 등록 갱신 및 GPU 오케스트레이션 카테고리 확인", "국가 AI 컴퓨팅 센터 입찰 참여를 위한 컨소시엄 구성 착수"],
-    batch_id: "demo", created_at: "2026-03-28",
+    batch_id: "demo", original_language: null, original_title: null, original_summary: null, created_at: "2026-03-28",
   },
   {
     id: "19", title: "AI기본법 국회 본회의 통과…공공 AI 시스템 안전성 평가 의무화",
@@ -146,7 +146,7 @@ const SAMPLE_ARTICLES: Article[] = [
     relevance_score: 8, urgency: "yellow",
     impact_comment: "공공 AI 안전성 평가 의무화로 JONATHAN 플랫폼의 거버넌스/모니터링 기능이 경쟁 우위 요소.",
     deep_summary: null, source_description: null, key_findings: [], action_items: [],
-    batch_id: "demo", created_at: "2026-03-28",
+    batch_id: "demo", original_language: null, original_title: null, original_summary: null, created_at: "2026-03-28",
   },
 
   // 🌍 글로벌
@@ -158,7 +158,7 @@ const SAMPLE_ARTICLES: Article[] = [
     relevance_score: 6, urgency: "green",
     impact_comment: "해외 진출 시 EU AI Act 규정 준수 필요. JONATHAN 플랫폼의 AI 거버넌스 기능 검토.",
     deep_summary: null, source_description: null, key_findings: [], action_items: [],
-    batch_id: "demo", created_at: "2026-03-28",
+    batch_id: "demo", original_language: null, original_title: null, original_summary: null, created_at: "2026-03-28",
   },
 
   // 💰 투자
@@ -170,7 +170,7 @@ const SAMPLE_ARTICLES: Article[] = [
     relevance_score: 8, urgency: "yellow",
     impact_comment: "NVIDIA 데이터센터 매출 급증은 GPUBASE 시장 확대 신호. 동종업계 밸류에이션 근거로 활용.",
     deep_summary: null, source_description: null, key_findings: [], action_items: [],
-    batch_id: "demo", created_at: "2026-03-28",
+    batch_id: "demo", original_language: null, original_title: null, original_summary: null, created_at: "2026-03-28",
   },
   {
     id: "13", title: "KOSDAQ AI 인프라 섹터 시가총액 10조원 돌파",
@@ -180,7 +180,7 @@ const SAMPLE_ARTICLES: Article[] = [
     relevance_score: 8, urgency: "yellow",
     impact_comment: "KOSDAQ AI 인프라 섹터 성장은 ACRYL 기업가치 재평가 기대. IR 스토리텔링에 활용.",
     deep_summary: null, source_description: null, key_findings: [], action_items: [],
-    batch_id: "demo", created_at: "2026-03-28",
+    batch_id: "demo", original_language: null, original_title: null, original_summary: null, created_at: "2026-03-28",
   },
 
   // 🔬 블로그
@@ -192,7 +192,7 @@ const SAMPLE_ARTICLES: Article[] = [
     relevance_score: 9, urgency: "yellow",
     impact_comment: "AGENTBASE의 MCP 네이티브 지원은 핵심 차별화. Anthropic 최신 가이드 반영하여 호환성 검증 필요.",
     deep_summary: null, source_description: null, key_findings: [], action_items: [],
-    batch_id: "demo", created_at: "2026-03-28",
+    batch_id: "demo", original_language: null, original_title: null, original_summary: null, created_at: "2026-03-28",
   },
   {
     id: "15", title: "NVIDIA Blog: CUDA 13.0 릴리즈 - GPU 멀티테넌시 강화",
@@ -202,7 +202,7 @@ const SAMPLE_ARTICLES: Article[] = [
     relevance_score: 9, urgency: "red",
     impact_comment: "CUDA 13.0의 멀티테넌시 강화는 GPUBASE 핵심 기능과 직결. 즉시 기술검토 및 지원 계획 수립 필요.",
     deep_summary: null, source_description: null, key_findings: [], action_items: [],
-    batch_id: "demo", created_at: "2026-03-28",
+    batch_id: "demo", original_language: null, original_title: null, original_summary: null, created_at: "2026-03-28",
   },
 ];
 

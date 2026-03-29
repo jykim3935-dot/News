@@ -1,21 +1,54 @@
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
 
-let _supabase: SupabaseClient | null = null;
+// Server-side client (service role key) - bypasses RLS, for pipeline/API routes
+let _supabaseAdmin: SupabaseClient | null = null;
 
-export function getSupabase(): SupabaseClient {
-  if (!_supabase) {
-    _supabase = createClient(
-      process.env.SUPABASE_URL!,
-      process.env.SUPABASE_ANON_KEY!
-    );
+export function getSupabaseAdmin(): SupabaseClient {
+  if (!_supabaseAdmin) {
+    const url = process.env.SUPABASE_URL;
+    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    if (!url || !serviceKey) {
+      throw new Error(
+        "Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY environment variables"
+      );
+    }
+    _supabaseAdmin = createClient(url, serviceKey, {
+      auth: { autoRefreshToken: false, persistSession: false },
+    });
   }
-  return _supabase;
+  return _supabaseAdmin;
 }
 
+// Public client (anon key) - respects RLS, for client-side/read-only operations
+let _supabasePublic: SupabaseClient | null = null;
+
+export function getSupabasePublic(): SupabaseClient {
+  if (!_supabasePublic) {
+    const url = process.env.SUPABASE_URL;
+    const anonKey = process.env.SUPABASE_ANON_KEY;
+    if (!url || !anonKey) {
+      throw new Error(
+        "Missing SUPABASE_URL or SUPABASE_ANON_KEY environment variables"
+      );
+    }
+    _supabasePublic = createClient(url, anonKey);
+  }
+  return _supabasePublic;
+}
+
+// Default export: admin client for server-side operations (pipeline, API routes)
 export const supabase = new Proxy({} as SupabaseClient, {
   get(_target, prop) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return (getSupabase() as any)[prop];
+    return (getSupabaseAdmin() as any)[prop];
+  },
+});
+
+// Public client proxy for read-only / client-facing operations
+export const supabasePublic = new Proxy({} as SupabaseClient, {
+  get(_target, prop) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return (getSupabasePublic() as any)[prop];
   },
 });
 
@@ -91,6 +124,9 @@ export interface Article {
   key_findings: string[];
   action_items: string[];
   batch_id: string | null;
+  original_language: string | null;
+  original_title: string | null;
+  original_summary: string | null;
   created_at: string;
 }
 

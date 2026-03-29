@@ -1,5 +1,6 @@
 import { supabase } from "./supabase";
 import { collectAll } from "./collector";
+import { translateArticles } from "./translator";
 import { curateArticles, deepCurateArticles } from "./curator";
 import { renderNewsletter } from "./newsletter";
 import { sendNewsletter } from "./sender";
@@ -10,6 +11,7 @@ import type { Article } from "./supabase";
 interface PipelineResult {
   batchId: string;
   articlesCount: number;
+  translatedCount: number;
   deepCuratedCount: number;
   trendsCount: number;
   sent: number;
@@ -40,12 +42,17 @@ export async function runPipeline(
     const collected = await collectAll(batchId);
     console.log(`[pipeline] Collected ${collected.length} articles`);
 
-    // Step 2: Basic Curation
-    console.log("[pipeline] Step 2/7: Basic curation...");
+    // Step 2: Translate English articles to Korean
+    console.log("[pipeline] Step 2/8: Translating English articles...");
+    const translatedCount = await translateArticles(batchId);
+    console.log(`[pipeline] Translated ${translatedCount} English articles`);
+
+    // Step 3: Basic Curation
+    console.log("[pipeline] Step 3/8: Basic curation...");
     await curateArticles(batchId);
 
-    // Step 3: Deep Curation (score >= 7 only)
-    console.log("[pipeline] Step 3/7: Deep curation (high-score articles)...");
+    // Step 4: Deep Curation (score >= 7 only)
+    console.log("[pipeline] Step 4/8: Deep curation (high-score articles)...");
     await deepCurateArticles(batchId);
 
     // Fetch curated articles
@@ -58,12 +65,12 @@ export async function runPipeline(
     const allArticles = (articles as Article[]) || [];
     const deepCount = allArticles.filter((a) => a.deep_summary).length;
 
-    // Step 4: Trend Detection
-    console.log("[pipeline] Step 4/7: Detecting trends...");
+    // Step 5: Trend Detection
+    console.log("[pipeline] Step 5/8: Detecting trends...");
     const { trends, summary: trendSummary } = await detectTrends(allArticles, batchId);
 
-    // Step 5: Executive Brief
-    console.log("[pipeline] Step 5/7: Generating executive brief...");
+    // Step 6: Executive Brief
+    console.log("[pipeline] Step 6/8: Generating executive brief...");
     const executiveBrief = await generateExecutiveBrief(allArticles);
 
     // Save brief + trend summary to pipeline run
@@ -75,8 +82,8 @@ export async function runPipeline(
       })
       .eq("id", run.id);
 
-    // Step 6: Render Newsletter
-    console.log("[pipeline] Step 6/7: Rendering newsletter...");
+    // Step 7: Render Newsletter
+    console.log("[pipeline] Step 7/8: Rendering newsletter...");
     const date = new Date().toLocaleDateString("ko-KR", {
       year: "numeric",
       month: "long",
@@ -91,8 +98,8 @@ export async function runPipeline(
       trends,
     });
 
-    // Step 7: Send
-    console.log("[pipeline] Step 7/7: Sending...");
+    // Step 8: Send
+    console.log("[pipeline] Step 8/8: Sending...");
     const { sent, errors } = await sendNewsletter(html, date, testEmail);
 
     // Update pipeline run
@@ -109,6 +116,7 @@ export async function runPipeline(
     return {
       batchId,
       articlesCount: allArticles.length,
+      translatedCount,
       deepCuratedCount: deepCount,
       trendsCount: trends.length,
       sent,
@@ -132,6 +140,7 @@ export async function runPipeline(
     return {
       batchId,
       articlesCount: 0,
+      translatedCount: 0,
       deepCuratedCount: 0,
       trendsCount: 0,
       sent: 0,
