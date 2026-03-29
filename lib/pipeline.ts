@@ -23,6 +23,7 @@ interface PipelineResult {
 }
 
 async function createPipelineRun(): Promise<{ id: string; batch_id: string }> {
+  const fallbackBatchId = randomUUID();
   if (isSupabaseConfigured()) {
     try {
       const { data, error } = await supabase
@@ -32,10 +33,19 @@ async function createPipelineRun(): Promise<{ id: string; batch_id: string }> {
         .single();
       if (!error && data) return data as { id: string; batch_id: string };
     } catch { /* fall through */ }
+    // Retry with explicit batch_id
+    try {
+      const { data, error } = await supabase
+        .from("pipeline_runs")
+        .insert({ status: "running", batch_id: fallbackBatchId })
+        .select()
+        .single();
+      if (!error && data) return data as { id: string; batch_id: string };
+    } catch { /* fall through */ }
   }
   const run = localStore.insert<PipelineRun>("pipeline_runs", {
     status: "running",
-    batch_id: `local-${Date.now()}`,
+    batch_id: fallbackBatchId,
     started_at: new Date().toISOString(),
     completed_at: null,
     articles_count: 0,
@@ -60,7 +70,7 @@ export async function runPipeline(
   testEmail?: string
 ): Promise<PipelineResult> {
   const errors: string[] = [];
-  let batchId = `local-${Date.now()}`;
+  let batchId: string = randomUUID();
   let runId = "";
 
   // Create pipeline run
@@ -78,30 +88,49 @@ export async function runPipeline(
   let collectedArticles: Article[] = [];
   try {
     const rawCollected = await collectAll(batchId);
-    // Convert collected partial articles to full Article objects with IDs
-    collectedArticles = rawCollected.map((a) => ({
-      id: randomUUID(),
-      title: a.title || "",
-      url: a.url || "",
-      source: a.source || null,
-      content_type: a.content_type || "news",
-      published_at: a.published_at || null,
-      summary: a.summary || null,
-      matched_keywords: a.matched_keywords || [],
-      category: null,
-      relevance_score: null,
-      urgency: null,
-      impact_comment: null,
-      deep_summary: null,
-      source_description: null,
-      key_findings: [],
-      action_items: [],
-      batch_id: batchId,
-      created_at: new Date().toISOString(),
-      title_ko: null,
-      summary_ko: null,
-      dedup_group: null,
-    })) as Article[];
+    console.log(`[pipeline] collectAll returned ${rawCollected.length} articles`);
+
+    // collector.ts already inserted articles into DB — read them back with DB-generated IDs
+    if (isSupabaseConfigured()) {
+      try {
+        const { data } = await supabase
+          .from("articles")
+          .select("*")
+          .eq("batch_id", batchId);
+        if (data?.length) {
+          collectedArticles = data as Article[];
+          console.log(`[pipeline] Loaded ${collectedArticles.length} articles from DB`);
+        }
+      } catch { /* fall through to memory fallback */ }
+    }
+
+    // Fallback: if DB read failed, build Article objects from memory
+    if (collectedArticles.length === 0 && rawCollected.length > 0) {
+      console.log("[pipeline] DB read failed, using memory fallback");
+      collectedArticles = rawCollected.map((a) => ({
+        id: randomUUID(),
+        title: a.title || "",
+        url: a.url || "",
+        source: a.source || null,
+        content_type: a.content_type || "news",
+        published_at: a.published_at || null,
+        summary: a.summary || null,
+        matched_keywords: a.matched_keywords || [],
+        category: null,
+        relevance_score: null,
+        urgency: null,
+        impact_comment: null,
+        deep_summary: null,
+        source_description: null,
+        key_findings: [],
+        action_items: [],
+        batch_id: batchId,
+        created_at: new Date().toISOString(),
+        title_ko: null,
+        summary_ko: null,
+        dedup_group: null,
+      })) as Article[];
+    }
     console.log(`[pipeline] Collected ${collectedArticles.length} articles`);
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
