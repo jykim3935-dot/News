@@ -40,18 +40,25 @@ export default function AIAnalysis() {
   const [loading, setLoading] = useState(true);
   const [analyzing, setAnalyzing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [analysisAttempted, setAnalysisAttempted] = useState(false);
 
   useEffect(() => {
     (async () => {
       try {
         const res = await fetch("/api/articles/latest");
+        if (!res.ok) {
+          setError(`기사 로드 실패 (HTTP ${res.status})`);
+          setLoading(false);
+          return;
+        }
         const data = await res.json();
         setArticles(data.articles || []);
         if (data.executiveBrief) {
           setBrief(data.executiveBrief);
+          setAnalysisAttempted(true);
         }
-      } catch {
-        setError("기사 로드 실패");
+      } catch (e) {
+        setError("기사 로드 실패: " + (e instanceof Error ? e.message : String(e)));
       }
       setLoading(false);
     })();
@@ -60,17 +67,26 @@ export default function AIAnalysis() {
   const runAnalysis = async () => {
     setAnalyzing(true);
     setError(null);
+    setAnalysisAttempted(true);
     try {
       const res = await fetch("/api/analysis/run", { method: "POST" });
+      if (!res.ok) {
+        const text = await res.text();
+        setError(`AI 분석 서버 오류 (HTTP ${res.status}): ${text.slice(0, 200)}`);
+        setAnalyzing(false);
+        return;
+      }
       const data = await res.json();
       if (data.error) {
         setError(data.error);
       }
       if (data.brief) {
         setBrief(data.brief);
+      } else if (!data.error) {
+        setError("AI 분석 결과가 비어있습니다. ANTHROPIC_API_KEY 환경변수를 확인하세요.");
       }
-    } catch {
-      setError("AI 분석 요청 실패");
+    } catch (e) {
+      setError("AI 분석 요청 실패: " + (e instanceof Error ? e.message : String(e)));
     }
     setAnalyzing(false);
   };
@@ -153,8 +169,14 @@ export default function AIAnalysis() {
         </div>
       ) : !analyzing && articles.length > 0 ? (
         <div className="text-center py-12 bg-white border border-gray-200 rounded-lg shadow-sm">
-          <div className="text-gray-400 text-sm mb-2">아직 AI 분석이 실행되지 않았습니다.</div>
-          <div className="text-gray-400 text-xs">&quot;AI 분석 실행&quot; 버튼을 클릭하세요.</div>
+          {analysisAttempted ? (
+            <div className="text-red-500 text-sm">AI 분석이 실패했거나 결과가 비어있습니다. 위의 에러 메시지를 확인하세요.</div>
+          ) : (
+            <>
+              <div className="text-gray-400 text-sm mb-2">아직 AI 분석이 실행되지 않았습니다.</div>
+              <div className="text-gray-400 text-xs">&quot;AI 분석 실행&quot; 버튼을 클릭하세요.</div>
+            </>
+          )}
         </div>
       ) : null}
 

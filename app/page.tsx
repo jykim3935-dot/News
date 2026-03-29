@@ -88,8 +88,13 @@ export default function Dashboard() {
 
       {/* Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-6">
-        {activeTab === "preview" && <NewsTable />}
-        {activeTab === "analysis" && <AIAnalysis />}
+        {/* NewsTable and AIAnalysis stay mounted to preserve state across tab switches */}
+        <div style={{ display: activeTab === "preview" ? "block" : "none" }}>
+          <NewsTable />
+        </div>
+        <div style={{ display: activeTab === "analysis" ? "block" : "none" }}>
+          <AIAnalysis />
+        </div>
         {activeTab === "sources" && <SourcesManager key={`sources-${refreshKey}`} />}
         {activeTab === "keywords" && <KeywordsManager key={`keywords-${refreshKey}`} />}
         {activeTab === "recipients" && <RecipientsManager />}
