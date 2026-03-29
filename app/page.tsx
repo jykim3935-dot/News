@@ -6,9 +6,11 @@ import SourcesManager from "@/components/SourcesManager";
 import KeywordsManager from "@/components/KeywordsManager";
 import RecipientsManager from "@/components/RecipientsManager";
 import PipelineLogs from "@/components/PipelineLogs";
+import AIAnalysis from "@/components/AIAnalysis";
 
 const TABS = [
   { id: "preview", label: "뉴스레터", icon: "📰" },
+  { id: "analysis", label: "AI 분석", icon: "🤖" },
   { id: "sources", label: "소스", icon: "🔗" },
   { id: "keywords", label: "키워드", icon: "🔑" },
   { id: "recipients", label: "수신자", icon: "👥" },
@@ -87,6 +89,7 @@ export default function Dashboard() {
       {/* Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-6">
         {activeTab === "preview" && <NewsTable />}
+        {activeTab === "analysis" && <AIAnalysis />}
         {activeTab === "sources" && <SourcesManager key={`sources-${refreshKey}`} />}
         {activeTab === "keywords" && <KeywordsManager key={`keywords-${refreshKey}`} />}
         {activeTab === "recipients" && <RecipientsManager />}
