@@ -73,13 +73,28 @@ export async function runPipeline(
   let batchId: string = randomUUID();
   let runId = "";
 
+  // Pre-flight checks
+  if (!process.env.ANTHROPIC_API_KEY) {
+    console.error("[pipeline] ANTHROPIC_API_KEY not set — AI curation/analysis will fail");
+    errors.push("ANTHROPIC_API_KEY가 설정되지 않았습니다. 환경변수를 확인하세요.");
+  }
+  if (!process.env.RESEND_API_KEY) {
+    console.warn("[pipeline] RESEND_API_KEY not set — 이메일 발송을 건너뜁니다");
+  }
+  if (!isSupabaseConfigured()) {
+    console.warn("[pipeline] Supabase not configured — local store 사용");
+  }
+
   // Create pipeline run
   try {
     const run = await createPipelineRun();
     batchId = run.batch_id;
     runId = run.id;
+    console.log(`[pipeline] Pipeline run created: id=${runId}, batch=${batchId}`);
   } catch (e) {
-    errors.push(`Pipeline run 생성 실패: ${e instanceof Error ? e.message : String(e)}`);
+    const msg = e instanceof Error ? e.message : String(e);
+    errors.push(`Pipeline run 생성 실패: ${msg}`);
+    console.error("[pipeline] createPipelineRun failed:", msg);
   }
   console.log(`[pipeline] Started batch: ${batchId}`);
 
@@ -249,25 +264,35 @@ export async function runPipeline(
   try {
     console.log("[pipeline] Step 5: Generating executive brief...");
     executiveBrief = await generateExecutiveBrief(finalArticles);
-    if (runId && executiveBrief) {
-      await updatePipelineRun(runId, { executive_brief: executiveBrief } as Partial<PipelineRun>).catch(() => {});
+    if (executiveBrief) {
+      console.log(`[pipeline] Executive brief generated (${executiveBrief.length} chars)`);
+      if (runId) {
+        await updatePipelineRun(runId, { executive_brief: executiveBrief } as Partial<PipelineRun>).catch(() => {});
+      }
+    } else {
+      console.warn("[pipeline] Executive brief returned empty");
+      errors.push("AI 브리프 생성 결과가 비어있습니다");
     }
   } catch (e) {
     errors.push(`브리프 생성 실패: ${e instanceof Error ? e.message : String(e)}`);
     console.error("[pipeline] Executive brief failed:", e);
   }
 
-  // Step 6-7: Newsletter & Send (skip if no Resend API key)
+  // Step 6-7: Newsletter & Send
   try {
     if (process.env.RESEND_API_KEY) {
-      console.log("[pipeline] Step 6-7: Newsletter & Send...");
+      console.log("[pipeline] Step 6: Rendering newsletter...");
       const date = new Date().toLocaleDateString("ko-KR", {
         year: "numeric", month: "long", day: "numeric", weekday: "long",
       });
       const html = renderNewsletter({ articles: finalArticles, date, executiveBrief, trends: detectedTrends });
+      console.log(`[pipeline] Step 7: Sending newsletter (${html.length} bytes)...`);
       const sendResult = await sendNewsletter(html, date, testEmail);
       sent = sendResult.sent;
       if (sendResult.errors.length > 0) errors.push(...sendResult.errors);
+      console.log(`[pipeline] Newsletter sent to ${sent} recipients`);
+    } else {
+      errors.push("RESEND_API_KEY 미설정 — 이메일 발송 건너뜀");
     }
   } catch (e) {
     errors.push(`발송 실패: ${e instanceof Error ? e.message : String(e)}`);

@@ -71,9 +71,14 @@ export async function collectAll(
     if (isSupabaseConfigured()) {
       try {
         const { error } = await supabase.from("articles").insert(records);
-        if (error) throw error;
+        if (error) {
+          console.error("[collector] Supabase insert error:", error.message, error.details, error.hint);
+          throw error;
+        }
+        console.log(`[collector] Inserted ${records.length} articles into Supabase (batch: ${batchId})`);
       } catch (err) {
-        console.warn("[collector] Supabase insert failed, using local store:", err);
+        const msg = err instanceof Error ? err.message : String(err);
+        console.error("[collector] Supabase insert failed, falling back to local store:", msg);
         localStore.insertMany<Article>("articles", records as Omit<Article, "id" | "created_at">[]);
       }
     } else {
