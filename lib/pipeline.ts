@@ -6,7 +6,7 @@ import { renderNewsletter } from "./newsletter";
 import { sendNewsletter } from "./sender";
 import { generateExecutiveBrief } from "./executive-brief";
 import { detectTrends } from "./trend-detector";
-import type { Article, PipelineRun } from "./supabase";
+import type { Article, PipelineRun, Trend } from "./supabase";
 import { randomUUID } from "crypto";
 
 interface PipelineResult {
@@ -133,6 +133,8 @@ export async function runPipeline(
   let deepCount = 0;
   let trendsCount = 0;
   let sent = 0;
+  let executiveBrief = "";
+  let detectedTrends: Trend[] = [];
 
   // Step 2-3: Curation (requires Anthropic API)
   try {
@@ -198,6 +200,7 @@ export async function runPipeline(
     console.log("[pipeline] Step 4: Detecting trends...");
     const { trends, summary: trendSummary } = await detectTrends(finalArticles, batchId);
     trendsCount = trends.length;
+    detectedTrends = trends;
     if (runId && trendSummary) {
       await updatePipelineRun(runId, { trend_summary: trendSummary } as Partial<PipelineRun>).catch(() => {});
     }
@@ -209,7 +212,7 @@ export async function runPipeline(
   // Step 5: Executive Brief
   try {
     console.log("[pipeline] Step 5: Generating executive brief...");
-    const executiveBrief = await generateExecutiveBrief(finalArticles);
+    executiveBrief = await generateExecutiveBrief(finalArticles);
     if (runId && executiveBrief) {
       await updatePipelineRun(runId, { executive_brief: executiveBrief } as Partial<PipelineRun>).catch(() => {});
     }
@@ -225,7 +228,7 @@ export async function runPipeline(
       const date = new Date().toLocaleDateString("ko-KR", {
         year: "numeric", month: "long", day: "numeric", weekday: "long",
       });
-      const html = renderNewsletter({ articles: finalArticles, date, executiveBrief: "", trends: [] });
+      const html = renderNewsletter({ articles: finalArticles, date, executiveBrief, trends: detectedTrends });
       const sendResult = await sendNewsletter(html, date, testEmail);
       sent = sendResult.sent;
       if (sendResult.errors.length > 0) errors.push(...sendResult.errors);

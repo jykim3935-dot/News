@@ -132,11 +132,39 @@ ${ACRYL_CONTEXT}
   ]
 }
 
-평가 기준:
-- relevance_score (1-10): 9-10 직접 경쟁/제품 관련, 7-8 AI인프라 주요 변화, 5-6 간접 관련, 3-4 참고
-- urgency: red(즉시 대응 필요), yellow(주의 관찰), green(참고)
+■ 관련도 점수 (relevance_score) 산출 기준:
+합계 = 직접성(0-4) + 영향력(0-3) + 시급성(0-2) + 정보품질(0-1)
+
+직접성 (0-4점):
+  4: ACRYL 제품(GPUBASE/AGENTBASE/FLIGHTBASE/NADIA) 또는 직접 경쟁사(제논/CoreWeave) 명시적 언급
+  3: GPU 클라우드, AI 에이전트 오케스트레이션, MLOps 등 ACRYL 핵심 사업 영역 직접 관련
+  2: AI 인프라, 클라우드 컴퓨팅, 헬스케어 AI 등 인접 영역
+  1: AI 산업 일반 동향 (LLM, AI 반도체 등)
+  0: AI와 무관하거나 매우 간접적
+
+영향력 (0-3점):
+  3: 시장 구조 변화, 대형 M&A, 규제 변경 등 산업 전체 영향
+  2: 주요 기업 전략 변화, 신제품 출시, 대형 계약
+  1: 기술 발전, 연구 결과, 소규모 투자
+  0: 개별 기업 일상 뉴스, 인사이동
+
+시급성 (0-2점):
+  2: 24시간 내 대응 필요 (경쟁사 수주, 규제 시행, 파트너 이슈)
+  1: 1주일 내 검토 필요 (시장 변화, 기술 동향)
+  0: 참고 수준 (장기 트렌드, 일반 정보)
+
+정보품질 (0-1점):
+  1: 1차 출처(공식 발표, 논문, 정부 문서), 구체적 수치/데이터 포함
+  0: 2차 출처, 추측성 기사, 구체적 데이터 없음
+
+■ urgency 매핑 (합계 점수 기반):
+  8-10점 → red (즉시 대응)
+  5-7점 → yellow (주의 관찰)
+  1-4점 → green (참고)
+
+■ 기타 필드:
 - category: competitive(경쟁), market(시장), regulation(규제), tech(기술), customer(고객), investment(투자)
-- content_type: news, report, consulting, global, investment, blog
+- content_type: news, report, consulting, global, investment, blog, government, research
 - impact_comment: "ACRYL에 무슨 의미인가" + 구체적 액션 시사점 (한국어, 1-2문장)
 - title_ko: 영어 제목은 자연스러운 한글로 번역. 한글이면 원문 그대로.
 - summary_ko: 영어 내용은 한글로 번역 요약. 한글이면 핵심만 2-3문장으로 다듬기.
