@@ -1,54 +1,43 @@
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
 
-// Server-side client (service role key) - bypasses RLS, for pipeline/API routes
-let _supabaseAdmin: SupabaseClient | null = null;
+// Supabase client - uses service role key if available (bypasses RLS),
+// falls back to anon key for backward compatibility
+let _supabase: SupabaseClient | null = null;
 
-export function getSupabaseAdmin(): SupabaseClient {
-  if (!_supabaseAdmin) {
+export function getSupabase(): SupabaseClient {
+  if (!_supabase) {
     const url = process.env.SUPABASE_URL;
     const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-    if (!url || !serviceKey) {
-      throw new Error(
-        "Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY environment variables"
-      );
-    }
-    _supabaseAdmin = createClient(url, serviceKey, {
-      auth: { autoRefreshToken: false, persistSession: false },
-    });
-  }
-  return _supabaseAdmin;
-}
-
-// Public client (anon key) - respects RLS, for client-side/read-only operations
-let _supabasePublic: SupabaseClient | null = null;
-
-export function getSupabasePublic(): SupabaseClient {
-  if (!_supabasePublic) {
-    const url = process.env.SUPABASE_URL;
     const anonKey = process.env.SUPABASE_ANON_KEY;
-    if (!url || !anonKey) {
+
+    if (!url) {
+      throw new Error("Missing SUPABASE_URL environment variable");
+    }
+
+    if (serviceKey) {
+      // Production: service role key bypasses RLS
+      _supabase = createClient(url, serviceKey, {
+        auth: { autoRefreshToken: false, persistSession: false },
+      });
+    } else if (anonKey) {
+      // Fallback: anon key with RLS
+      console.warn(
+        "[supabase] SUPABASE_SERVICE_ROLE_KEY not set, using anon key"
+      );
+      _supabase = createClient(url, anonKey);
+    } else {
       throw new Error(
-        "Missing SUPABASE_URL or SUPABASE_ANON_KEY environment variables"
+        "Missing SUPABASE_SERVICE_ROLE_KEY or SUPABASE_ANON_KEY"
       );
     }
-    _supabasePublic = createClient(url, anonKey);
   }
-  return _supabasePublic;
+  return _supabase;
 }
 
-// Default export: admin client for server-side operations (pipeline, API routes)
 export const supabase = new Proxy({} as SupabaseClient, {
   get(_target, prop) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return (getSupabaseAdmin() as any)[prop];
-  },
-});
-
-// Public client proxy for read-only / client-facing operations
-export const supabasePublic = new Proxy({} as SupabaseClient, {
-  get(_target, prop) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return (getSupabasePublic() as any)[prop];
+    return (getSupabase() as any)[prop];
   },
 });
 

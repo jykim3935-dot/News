@@ -77,12 +77,21 @@ const PRESET_KEYWORD_GROUPS: { group_name: string; category: Category; content_t
   },
 ];
 
+const CONTENT_TYPE_LABELS: Record<string, string> = {
+  news: "뉴스", report: "보고서", research: "학술", consulting: "컨설팅",
+  government: "정부정책", global: "글로벌", investment: "투자", blog: "블로그",
+};
+
 export default function KeywordsManager() {
   const [groups, setGroups] = useState<KeywordGroup[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [showPresets, setShowPresets] = useState(false);
+  const [aiQuery, setAiQuery] = useState("");
+  const [aiSuggestions, setAiSuggestions] = useState<{ group_name: string; category: Category; content_types: ContentType[]; priority: number; keywords: string[]; enabled: boolean }[]>([]);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [showAi, setShowAi] = useState(false);
   const [form, setForm] = useState({
     group_name: "",
     category: "market" as Category,
@@ -182,13 +191,64 @@ export default function KeywordsManager() {
     fetchGroups();
   };
 
+  const handleAiSuggest = async () => {
+    if (!aiQuery.trim()) return;
+    setAiLoading(true);
+    setAiSuggestions([]);
+    try {
+      const res = await fetch("/api/ai/suggest", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query: aiQuery, type: "keywords" }),
+      });
+      const data = await res.json();
+      setAiSuggestions(data.suggestions || []);
+    } catch {
+      console.error("AI suggestion failed");
+    }
+    setAiLoading(false);
+  };
+
+  const handleAddAiSuggestion = async (suggestion: typeof aiSuggestions[number]) => {
+    const exists = groups.some((g) => g.group_name === suggestion.group_name);
+    if (exists) return;
+    await fetch("/api/keywords", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(suggestion),
+    });
+    fetchGroups();
+  };
+
+  const handleAddAllAiSuggestions = async () => {
+    for (const s of aiSuggestions) {
+      const exists = groups.some((g) => g.group_name === s.group_name);
+      if (!exists) {
+        await fetch("/api/keywords", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(s),
+        });
+      }
+    }
+    setAiSuggestions([]);
+    setShowAi(false);
+    fetchGroups();
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap justify-between items-center gap-2">
         <h3 className="text-lg font-semibold text-gray-900">키워드 그룹 ({groups.length})</h3>
         <div className="flex gap-2">
           <button
-            onClick={() => setShowPresets(!showPresets)}
+            onClick={() => { setShowAi(!showAi); setShowPresets(false); }}
+            className="px-3 sm:px-4 py-2 bg-purple-50 hover:bg-purple-100 text-purple-700 rounded-lg text-xs sm:text-sm border border-purple-200"
+          >
+            🤖 AI 추천
+          </button>
+          <button
+            onClick={() => { setShowPresets(!showPresets); setShowAi(false); }}
             className="px-3 sm:px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-xs sm:text-sm border border-gray-200"
           >
             📋 프리셋
@@ -201,6 +261,76 @@ export default function KeywordsManager() {
           </button>
         </div>
       </div>
+
+      {/* AI Suggestion Panel */}
+      {showAi && (
+        <div className="p-4 bg-purple-50 border border-purple-200 rounded-lg space-y-3">
+          <h4 className="text-sm font-semibold text-purple-900">🤖 AI 키워드 추천</h4>
+          <div className="flex gap-2">
+            <input
+              placeholder="예: 반도체 공급망, 의료AI 규제, 클라우드 보안..."
+              value={aiQuery}
+              onChange={(e) => setAiQuery(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleAiSuggest()}
+              className="flex-1 px-3 py-2 bg-white border border-purple-200 rounded text-sm text-gray-800"
+            />
+            <button
+              onClick={handleAiSuggest}
+              disabled={aiLoading || !aiQuery.trim()}
+              className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded text-sm disabled:opacity-50"
+            >
+              {aiLoading ? "분석 중..." : "추천받기"}
+            </button>
+          </div>
+          {aiSuggestions.length > 0 && (
+            <>
+              <div className="flex justify-between items-center">
+                <span className="text-xs text-purple-700">{aiSuggestions.length}개 키워드 그룹 추천</span>
+                <button
+                  onClick={handleAddAllAiSuggestions}
+                  className="px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded text-xs"
+                >
+                  전체 추가
+                </button>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {aiSuggestions.map((s, i) => {
+                  const exists = groups.some((g) => g.group_name === s.group_name);
+                  return (
+                    <div key={i} className="p-2 bg-white rounded border border-purple-100">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-sm font-medium text-gray-900">{s.group_name}</span>
+                        <button
+                          onClick={() => handleAddAiSuggestion(s)}
+                          disabled={exists}
+                          className={`px-2 py-1 rounded text-xs ${
+                            exists
+                              ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                              : "bg-purple-100 text-purple-700 hover:bg-purple-200"
+                          }`}
+                        >
+                          {exists ? "추가됨" : "+ 추가"}
+                        </button>
+                      </div>
+                      <div className="text-xs text-gray-500 mb-1">
+                        {s.category} · {s.content_types?.map((ct) => CONTENT_TYPE_LABELS[ct] || ct).join(", ") || "전체"}
+                      </div>
+                      <div className="flex flex-wrap gap-1">
+                        {s.keywords.slice(0, 6).map((k) => (
+                          <span key={k} className="text-xs bg-purple-50 border border-purple-200 rounded px-1.5 py-0.5 text-purple-700">{k}</span>
+                        ))}
+                        {s.keywords.length > 6 && (
+                          <span className="text-xs text-purple-400">+{s.keywords.length - 6}</span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </>
+          )}
+        </div>
+      )}
 
       {/* Presets Panel */}
       {showPresets && (
