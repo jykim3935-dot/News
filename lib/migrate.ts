@@ -118,8 +118,8 @@ export async function ensureMigration(): Promise<void> {
       console.log("[migrate] Schema created successfully");
     }
 
-    // Seed default sources if empty
-    const { data: existingSources } = await supabase.from("sources").select("id").limit(1);
+    // Seed default sources if empty, or sync new defaults if data exists
+    const { data: existingSources } = await supabase.from("sources").select("name");
     if (!existingSources || existingSources.length === 0) {
       console.log("[migrate] Seeding default sources...");
       const sourcesToInsert = DEFAULT_SOURCES.map((s) => ({
@@ -134,10 +134,24 @@ export async function ensureMigration(): Promise<void> {
       const { error: seedErr } = await supabase.from("sources").insert(sourcesToInsert);
       if (seedErr) console.error("[migrate] Source seed error:", seedErr.message);
       else console.log(`[migrate] Seeded ${sourcesToInsert.length} sources`);
+    } else {
+      // Sync: insert new defaults that don't exist in DB
+      const existingNames = new Set(existingSources.map((s: { name: string }) => s.name));
+      const newDefaults = DEFAULT_SOURCES.filter((s) => !existingNames.has(s.name));
+      if (newDefaults.length > 0) {
+        const toInsert = newDefaults.map((s) => ({
+          name: s.name, url: s.url, type: s.type,
+          content_type: s.content_type, category: s.category,
+          enabled: s.enabled, description: s.description,
+        }));
+        const { error: syncErr } = await supabase.from("sources").insert(toInsert);
+        if (syncErr) console.error("[migrate] Source sync error:", syncErr.message);
+        else console.log(`[migrate] Synced ${toInsert.length} new default sources`);
+      }
     }
 
-    // Seed default keyword groups if empty
-    const { data: existingKw } = await supabase.from("keyword_groups").select("id").limit(1);
+    // Seed default keyword groups if empty, or sync new defaults
+    const { data: existingKw } = await supabase.from("keyword_groups").select("group_name");
     if (!existingKw || existingKw.length === 0) {
       console.log("[migrate] Seeding default keyword groups...");
       const kwToInsert = DEFAULT_KEYWORD_GROUPS.map((k) => ({
@@ -151,6 +165,20 @@ export async function ensureMigration(): Promise<void> {
       const { error: seedErr } = await supabase.from("keyword_groups").insert(kwToInsert);
       if (seedErr) console.error("[migrate] Keyword seed error:", seedErr.message);
       else console.log(`[migrate] Seeded ${kwToInsert.length} keyword groups`);
+    } else {
+      // Sync: insert new default keyword groups that don't exist in DB
+      const existingGroupNames = new Set(existingKw.map((g: { group_name: string }) => g.group_name));
+      const newKwDefaults = DEFAULT_KEYWORD_GROUPS.filter((g) => !existingGroupNames.has(g.group_name));
+      if (newKwDefaults.length > 0) {
+        const toInsert = newKwDefaults.map((k) => ({
+          group_name: k.group_name, category: k.category,
+          content_types: k.content_types, priority: k.priority,
+          keywords: k.keywords, enabled: k.enabled,
+        }));
+        const { error: syncErr } = await supabase.from("keyword_groups").insert(toInsert);
+        if (syncErr) console.error("[migrate] Keyword sync error:", syncErr.message);
+        else console.log(`[migrate] Synced ${toInsert.length} new default keyword groups`);
+      }
     }
 
     migrationDone = true;

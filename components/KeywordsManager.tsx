@@ -11,201 +11,7 @@ const PRIORITY_LABELS: Record<number, string> = {
   3: "🟢 낮음",
 };
 
-const PRESET_KEYWORD_GROUPS: { group_name: string; category: Category; content_types: ContentType[]; priority: number; keywords: string[]; enabled: boolean }[] = [
-  // ===== 핵심 제품 (Priority 1) =====
-  {
-    group_name: "GPU 클라우드/오케스트레이션",
-    category: "tech",
-    content_types: ["news", "research", "blog", "global"],
-    priority: 1,
-    keywords: ["GPU 클라우드", "GPU-as-a-Service", "GPU 오케스트레이션", "GPU 스케줄링", "GPU 클러스터", "멀티테넌트 GPU", "GPU 가상화", "GPUBASE", "NVIDIA DGX", "H100", "B200", "B300", "GPU 임대", "GPU 풀링"],
-    enabled: true,
-  },
-  {
-    group_name: "AI 에이전트/MCP",
-    category: "tech",
-    content_types: ["news", "research", "blog", "global"],
-    priority: 1,
-    keywords: ["AI 에이전트", "AI agent", "MCP", "Model Context Protocol", "에이전트 오케스트레이션", "function calling", "tool use", "AGENTBASE", "멀티에이전트", "agentic AI", "AI 워크플로우", "A2A protocol", "agent-to-agent"],
-    enabled: true,
-  },
-  {
-    group_name: "MLOps/모델 서빙",
-    category: "tech",
-    content_types: ["news", "research", "blog"],
-    priority: 1,
-    keywords: ["MLOps", "모델 서빙", "inference optimization", "추론 최적화", "모델 배포", "FLIGHTBASE", "Kubeflow", "MLflow", "vLLM", "TensorRT", "model serving", "LLM 배포", "ONNX Runtime", "Triton Inference Server"],
-    enabled: true,
-  },
-  // ===== 경쟁사/파트너 (Priority 1) =====
-  {
-    group_name: "직접 경쟁사",
-    category: "competitive",
-    content_types: ["news", "report", "investment"],
-    priority: 1,
-    keywords: ["제논", "GenOn", "마인즈앤컴퍼니", "Lambda Labs", "CoreWeave", "Together AI", "RunPod", "Paperspace", "Vast.ai", "GPU 클라우드 경쟁", "Crusoe Energy", "Nebius"],
-    enabled: true,
-  },
-  {
-    group_name: "파트너사 동향",
-    category: "competitive",
-    content_types: ["news"],
-    priority: 1,
-    keywords: ["KT AI", "KT 클라우드", "삼성SDS AI", "메가존클라우드", "NVIDIA 파트너", "KT GPU", "삼성SDS 클라우드", "KT enterprise AI", "메가존 MSP"],
-    enabled: true,
-  },
-  // ===== 시장/고객 (Priority 1) =====
-  {
-    group_name: "공공 AI 인프라 사업",
-    category: "customer",
-    content_types: ["news", "government"],
-    priority: 1,
-    keywords: ["공공 AI", "AI 인프라 구축", "나라장터 GPU", "정부 클라우드", "공공 클라우드", "AI 데이터센터", "국가 AI 컴퓨팅", "디지털뉴딜 AI", "AI 특구", "공공 조달 AI", "G-클라우드"],
-    enabled: true,
-  },
-  {
-    group_name: "헬스케어 AI/NADIA",
-    category: "market",
-    content_types: ["news", "research", "global"],
-    priority: 1,
-    keywords: ["의료 AI", "피부질환 AI", "AI 진단", "디지털 헬스케어", "의료기기 AI", "NADIA", "피부암 AI", "원격진료 AI", "FDA AI 승인", "SaMD", "AI 의료영상", "디지털 치료제"],
-    enabled: true,
-  },
-  // ===== AI 산업 전반 (Priority 2) =====
-  {
-    group_name: "생성형 AI/LLM",
-    category: "tech",
-    content_types: ["news", "research", "blog", "global"],
-    priority: 2,
-    keywords: ["생성형AI", "LLM", "GPT", "Claude", "Gemini", "오픈소스 LLM", "Llama", "파인튜닝", "RAG", "프롬프트 엔지니어링", "sLLM", "reasoning model", "chain-of-thought"],
-    enabled: true,
-  },
-  {
-    group_name: "AI 반도체/하드웨어",
-    category: "tech",
-    content_types: ["news", "report", "global"],
-    priority: 2,
-    keywords: ["AI 반도체", "NPU", "NVIDIA", "AMD MI300", "AI 칩", "HBM", "AI 가속기", "custom silicon", "삼성 HBM", "SK하이닉스 HBM", "AI ASIC", "Blackwell", "Grace Hopper"],
-    enabled: true,
-  },
-  {
-    group_name: "클라우드 인프라",
-    category: "tech",
-    content_types: ["news", "report", "global"],
-    priority: 2,
-    keywords: ["클라우드 인프라", "쿠버네티스", "컨테이너 오케스트레이션", "AWS GPU", "Azure AI", "GCP TPU", "클라우드 GPU", "IaaS", "하이브리드 클라우드", "서버리스 GPU", "클라우드 네이티브"],
-    enabled: true,
-  },
-  // ===== 정부/정책 (Priority 2) =====
-  {
-    group_name: "AI 정책/규제",
-    category: "regulation",
-    content_types: ["news", "government", "global"],
-    priority: 2,
-    keywords: ["AI기본법", "AI 규제", "AI 윤리", "디지털플랫폼정부법", "국가AI위원회", "AI 안전", "EU AI Act", "sovereign AI", "AI 거버넌스", "AI 안전성 평가"],
-    enabled: true,
-  },
-  {
-    group_name: "과학기술/산업 정책",
-    category: "regulation",
-    content_types: ["news", "government"],
-    priority: 2,
-    keywords: ["과기정통부 AI", "AI 예산", "국가전략기술", "디지털 전환 정책", "클라우드 보안인증", "CSAP", "AI 실증사업", "K-클라우드", "산업부 AI", "AI 바우처"],
-    enabled: true,
-  },
-  {
-    group_name: "글로벌 AI 규제 동향",
-    category: "regulation",
-    content_types: ["global", "news"],
-    priority: 2,
-    keywords: ["EU AI Act", "AI executive order", "NIST AI framework", "AI safety institute", "G7 AI", "OECD AI", "중국 AI 규제", "AI 수출통제", "칩4동맹", "sovereign AI policy"],
-    enabled: true,
-  },
-  // ===== 투자/IR (Priority 2) =====
-  {
-    group_name: "AI 인프라 투자/IR",
-    category: "investment",
-    content_types: ["news", "investment"],
-    priority: 2,
-    keywords: ["AI 인프라 투자", "GPU 클라우드 투자", "KOSDAQ AI", "AI IPO", "AI 스타트업 투자유치", "AI M&A", "AI 밸류에이션", "AI 인프라 시장규모", "데이터센터 투자"],
-    enabled: true,
-  },
-  {
-    group_name: "AI 산업 리서치/전망",
-    category: "investment",
-    content_types: ["report", "global"],
-    priority: 2,
-    keywords: ["AI market forecast", "AI infrastructure market", "Gartner AI", "IDC AI", "McKinsey AI", "AI spending", "AI capex", "GPU 시장 전망", "AI 인프라 TAM"],
-    enabled: true,
-  },
-  // ===== 학술/논문/리서치 (Priority 2-3) =====
-  {
-    group_name: "AI 시스템/인프라 논문",
-    category: "tech",
-    content_types: ["research", "global"],
-    priority: 2,
-    keywords: ["distributed training", "model parallelism", "GPU scheduling paper", "inference serving", "AI cluster", "data center networking", "mixture of experts", "speculative decoding", "KV cache optimization"],
-    enabled: true,
-  },
-  {
-    group_name: "AI 에이전트/자율 시스템 논문",
-    category: "tech",
-    content_types: ["research", "global"],
-    priority: 2,
-    keywords: ["agent framework paper", "multi-agent systems", "tool-augmented LLM", "code generation agent", "autonomous AI", "planning LLM", "web agent", "agent benchmark", "self-reflection AI"],
-    enabled: true,
-  },
-  {
-    group_name: "의료 AI 논문",
-    category: "market",
-    content_types: ["research", "global"],
-    priority: 3,
-    keywords: ["medical AI paper", "dermatology AI", "clinical AI", "medical imaging AI", "AI diagnosis accuracy", "digital pathology", "federated learning healthcare", "skin lesion classification"],
-    enabled: true,
-  },
-  // ===== 글로벌 테크 트렌드 (Priority 3) =====
-  {
-    group_name: "빅테크 AI 동향",
-    category: "competitive",
-    content_types: ["news", "global"],
-    priority: 3,
-    keywords: ["Microsoft AI", "Google AI", "Meta AI", "Amazon AI", "Apple AI", "NVIDIA earnings", "OpenAI", "Anthropic", "빅테크 AI 투자", "hyperscaler AI"],
-    enabled: true,
-  },
-  {
-    group_name: "AI 데이터센터/에너지",
-    category: "tech",
-    content_types: ["news", "global", "report"],
-    priority: 3,
-    keywords: ["AI 데이터센터", "데이터센터 전력", "AI 에너지", "원전 AI", "액침냉각", "데이터센터 PUE", "AI 전력소비", "소형모듈원자로 SMR", "데이터센터 부지"],
-    enabled: true,
-  },
-  {
-    group_name: "엣지 AI/온디바이스",
-    category: "tech",
-    content_types: ["news", "research", "global"],
-    priority: 3,
-    keywords: ["edge AI", "온디바이스 AI", "AI PC", "모바일 AI", "경량화 모델", "quantization", "모델 압축", "TinyML", "edge inference"],
-    enabled: true,
-  },
-  // ===== 국책연구기관/싱크탱크 (Priority 2) =====
-  {
-    group_name: "국책연구기관 보고서",
-    category: "market",
-    content_types: ["report", "research", "government"],
-    priority: 2,
-    keywords: ["KDI", "한국개발연구원", "KIET", "산업연구원", "ETRI", "전자통신연구원", "SPRi", "소프트웨어정책연구소", "KISDI", "정보통신정책연구원", "KISA", "한국인터넷진흥원", "국책연구기관", "정책보고서"],
-    enabled: true,
-  },
-  {
-    group_name: "미국/글로벌 싱크탱크",
-    category: "regulation",
-    content_types: ["global", "report", "research"],
-    priority: 2,
-    keywords: ["RAND", "Brookings", "CSIS", "Stanford HAI", "AI Index", "Allen Institute", "OECD AI", "AI governance", "AI policy research", "think tank AI", "US AI policy"],
-    enabled: true,
-  },
-];
+type PresetKeywordGroup = { group_name: string; category: Category; content_types: ContentType[]; priority: number; keywords: string[]; enabled: boolean };
 
 export default function KeywordsManager() {
   const [groups, setGroups] = useState<KeywordGroup[]>([]);
@@ -214,10 +20,12 @@ export default function KeywordsManager() {
   const [editId, setEditId] = useState<string | null>(null);
   const [showPresets, setShowPresets] = useState(false);
   const [addingPresets, setAddingPresets] = useState(false);
+  const [presets, setPresets] = useState<PresetKeywordGroup[]>([]);
+  const [presetsLoading, setPresetsLoading] = useState(false);
   const [showAiSuggest, setShowAiSuggest] = useState(false);
   const [aiQuery, setAiQuery] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
-  const [aiSuggestions, setAiSuggestions] = useState<{ groups: typeof PRESET_KEYWORD_GROUPS; explanation: string } | null>(null);
+  const [aiSuggestions, setAiSuggestions] = useState<{ groups: PresetKeywordGroup[]; explanation: string } | null>(null);
   const { toast } = useToast();
   const [form, setForm] = useState({
     group_name: "",
@@ -242,6 +50,21 @@ export default function KeywordsManager() {
       console.error("Failed to fetch keywords:", err);
     }
     setLoading(false);
+  };
+
+  const fetchPresets = async () => {
+    if (presets.length > 0) return;
+    setPresetsLoading(true);
+    try {
+      const res = await fetch("/api/presets/apply");
+      if (res.ok) {
+        const data = await res.json();
+        setPresets(data.keyword_groups || []);
+      }
+    } catch (err) {
+      console.error("Failed to fetch presets:", err);
+    }
+    setPresetsLoading(false);
   };
 
   useEffect(() => { fetchGroups(); }, []);
@@ -318,7 +141,7 @@ export default function KeywordsManager() {
     }
   };
 
-  const handleAddPreset = async (preset: typeof PRESET_KEYWORD_GROUPS[number]) => {
+  const handleAddPreset = async (preset: PresetKeywordGroup) => {
     const exists = groups.some((g) => g.group_name === preset.group_name);
     if (exists) {
       toast(`"${preset.group_name}" 이미 존재합니다`, "info");
@@ -350,7 +173,7 @@ export default function KeywordsManager() {
     setAiLoading(false);
   };
 
-  const handleAddAiGroup = async (group: typeof PRESET_KEYWORD_GROUPS[number]) => {
+  const handleAddAiGroup = async (group: PresetKeywordGroup) => {
     const exists = groups.some((g) => g.group_name === group.group_name);
     if (exists) { toast(`"${group.group_name}" 이미 존재합니다`, "info"); return; }
     const ok = await addSingleKeywordGroup(group as unknown as Record<string, unknown>);
@@ -366,7 +189,7 @@ export default function KeywordsManager() {
     setAddingPresets(true);
     let added = 0;
     let failed = 0;
-    for (const preset of PRESET_KEYWORD_GROUPS) {
+    for (const preset of presets) {
       const exists = groups.some((g) => g.group_name === preset.group_name);
       if (exists) continue;
       const ok = await addSingleKeywordGroup(preset as unknown as Record<string, unknown>);
@@ -396,7 +219,7 @@ export default function KeywordsManager() {
             🤖 AI 추천
           </button>
           <button
-            onClick={() => { setShowPresets(!showPresets); setShowAiSuggest(false); }}
+            onClick={() => { const next = !showPresets; setShowPresets(next); setShowAiSuggest(false); if (next) fetchPresets(); }}
             className="px-3 sm:px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-xs sm:text-sm border border-gray-200"
           >
             📋 프리셋
@@ -424,7 +247,8 @@ export default function KeywordsManager() {
             </button>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            {PRESET_KEYWORD_GROUPS.map((preset) => {
+            {presetsLoading && <p className="text-sm text-blue-600 col-span-2">로딩 중...</p>}
+            {presets.map((preset) => {
               const exists = groups.some((g) => g.group_name === preset.group_name);
               return (
                 <div key={preset.group_name} className="p-2 bg-white rounded border border-blue-100">

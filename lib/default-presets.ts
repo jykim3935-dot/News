@@ -20,6 +20,12 @@ export const DEFAULT_SOURCES: PresetSource[] = [
   { name: "블로터", url: "https://www.bloter.net/feed", type: "rss", content_type: "news", category: "tech", description: "IT/스타트업", enabled: true },
   { name: "매일경제 IT", url: "https://www.mk.co.kr/rss/30200030/", type: "rss", content_type: "news", category: "market", description: "IT/과학 경제", enabled: true },
 
+  // ── 스타트업/VC/투자 ──
+  { name: "플래텀", url: "https://platum.kr/feed", type: "rss", content_type: "news", category: "investment", description: "스타트업/VC/투자 전문 매체", enabled: true },
+  { name: "스타트업4", url: "https://www.startup4.co.kr/feed", type: "rss", content_type: "news", category: "investment", description: "스타트업 생태계 뉴스", enabled: true },
+  { name: "벤처스퀘어", url: "https://www.venturesquare.net/feed", type: "rss", content_type: "news", category: "investment", description: "벤처/스타트업 투자 뉴스", enabled: true },
+  { name: "바이라인네트워크", url: "https://byline.network/feed/", type: "rss", content_type: "news", category: "tech", description: "IT/AI 심층 취재", enabled: true },
+
   // ── 글로벌 AI/테크 ──
   { name: "TechCrunch AI", url: "https://techcrunch.com/category/artificial-intelligence/feed/", type: "rss", content_type: "global", category: "tech", description: "글로벌 AI 스타트업", enabled: true },
   { name: "VentureBeat AI", url: "https://venturebeat.com/category/ai/feed/", type: "rss", content_type: "global", category: "tech", description: "엔터프라이즈 AI", enabled: true },

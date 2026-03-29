@@ -12,6 +12,11 @@ const parser = new RssParser({
 });
 
 async function getEnabledRssSources(): Promise<Source[]> {
+  const defaults = DEFAULT_SOURCES.filter(
+    (s) => s.type === "rss" && s.enabled
+  ) as unknown as Source[];
+
+  let dbSources: Source[] = [];
   if (isSupabaseConfigured()) {
     try {
       const { data } = await supabase
@@ -19,38 +24,55 @@ async function getEnabledRssSources(): Promise<Source[]> {
         .select("*")
         .eq("type", "rss")
         .eq("enabled", true);
-      if (data?.length) return data as Source[];
+      if (data?.length) dbSources = data as Source[];
     } catch { /* fall through */ }
   }
-  const local = localStore
-    .select<Source>("sources")
-    .filter((s) => s.type === "rss" && s.enabled);
-  if (local.length > 0) return local;
+  if (dbSources.length === 0) {
+    const local = localStore
+      .select<Source>("sources")
+      .filter((s) => s.type === "rss" && s.enabled);
+    if (local.length > 0) dbSources = local;
+  }
+  if (dbSources.length === 0) return defaults;
 
-  // Fallback to built-in defaults
-  console.log("[rss] Using built-in default RSS sources");
-  return DEFAULT_SOURCES.filter((s) => s.type === "rss" && s.enabled) as unknown as Source[];
+  // DB에 없는 defaults 병합
+  const existingNames = new Set(dbSources.map((s) => s.name));
+  const missing = defaults.filter((s) => !existingNames.has(s.name));
+  if (missing.length > 0) {
+    console.log(`[rss] Merging ${missing.length} new default sources`);
+  }
+  return [...dbSources, ...missing];
 }
 
 async function getEnabledKeywords(): Promise<string[]> {
+  const defaultGroups = DEFAULT_KEYWORD_GROUPS.filter((g) => g.enabled);
+
+  let dbGroups: KeywordGroup[] = [];
   if (isSupabaseConfigured()) {
     try {
       const { data } = await supabase
         .from("keyword_groups")
         .select("*")
         .eq("enabled", true);
-      if (data?.length) return (data as KeywordGroup[]).flatMap((g) => g.keywords);
+      if (data?.length) dbGroups = data as KeywordGroup[];
     } catch { /* fall through */ }
   }
-  const local = localStore
-    .select<KeywordGroup>("keyword_groups")
-    .filter((g) => g.enabled)
-    .flatMap((g) => g.keywords);
-  if (local.length > 0) return local;
+  if (dbGroups.length === 0) {
+    const local = localStore
+      .select<KeywordGroup>("keyword_groups")
+      .filter((g) => g.enabled);
+    if (local.length > 0) dbGroups = local;
+  }
+  if (dbGroups.length === 0) return defaultGroups.flatMap((g) => g.keywords);
 
-  // Fallback to built-in defaults
-  console.log("[rss] Using built-in default keywords");
-  return DEFAULT_KEYWORD_GROUPS.flatMap((g) => g.keywords);
+  // DB에 없는 default keyword groups 병합
+  const existingNames = new Set(dbGroups.map((g) => g.group_name));
+  const missingGroups = defaultGroups.filter((g) => !existingNames.has(g.group_name));
+  if (missingGroups.length > 0) {
+    console.log(`[rss] Merging ${missingGroups.length} new default keyword groups`);
+  }
+  const allGroups = [...dbGroups, ...(missingGroups as unknown as KeywordGroup[])];
+  return allGroups.flatMap((g) => g.keywords);
 }
 
 async function fetchRssFeed(
