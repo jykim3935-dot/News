@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import type { Article, ContentType, Trend } from "@/lib/supabase";
+import type { Article, ContentType } from "@/lib/supabase";
 import { CONTENT_TYPES } from "@/lib/supabase";
 import { useToast } from "@/components/Toast";
 
@@ -37,14 +37,8 @@ export default function NewsTable() {
   const [running, setRunning] = useState(false);
   const [filter, setFilter] = useState<ContentType | "all">("all");
   const [expandedId, setExpandedId] = useState<string | null>(null);
-  const [showPreview, setShowPreview] = useState(false);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [executiveBrief, setExecutiveBrief] = useState<string>("");
-  const [trends, setTrends] = useState<Trend[]>([]);
   const [sortKey, setSortKey] = useState<"relevance_score" | "urgency" | "content_type">("relevance_score");
   const [sortAsc, setSortAsc] = useState(false);
-  const [runId, setRunId] = useState<string | null>(null);
-  const [previewLoading, setPreviewLoading] = useState(false);
   const { toast } = useToast();
 
   const fetchArticles = async () => {
@@ -53,9 +47,6 @@ export default function NewsTable() {
       const res = await fetch("/api/articles/latest");
       const data = await res.json();
       setArticles(data.articles || []);
-      setExecutiveBrief(data.executiveBrief || "");
-      setTrends(data.trends || []);
-      setRunId(data.run?.id || null);
     } catch {
       console.error("Failed to fetch articles");
     }
@@ -75,8 +66,6 @@ export default function NewsTable() {
         // Use articles directly from pipeline response (Vercel /tmp is ephemeral)
         if (Array.isArray(data.articles) && data.articles.length > 0) {
           setArticles(data.articles);
-          setExecutiveBrief(data.executiveBrief || "");
-          setTrends(data.trends || []);
           setLoading(false);
         }
         const count = data.articlesCount || data.articles?.length || 0;
@@ -96,45 +85,6 @@ export default function NewsTable() {
       toast("파이프라인 실행 실패", "error");
     }
     setRunning(false);
-  };
-
-  const openPreview = async () => {
-    setPreviewLoading(true);
-    try {
-      const res = await fetch("/api/newsletter/preview", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ articles, executiveBrief, trends, runId }),
-      });
-      const data = await res.json();
-      const html = data.html || "";
-      if (!html) {
-        toast("미리보기 생성 실패: 빈 응답", "error");
-        setPreviewLoading(false);
-        return;
-      }
-      // Update brief state if newly generated server-side
-      if (data.executiveBrief) {
-        setExecutiveBrief(data.executiveBrief);
-      }
-      // Show error if brief generation failed
-      if (data.briefError) {
-        toast(data.briefError, "error");
-      }
-      const blob = new Blob([html], { type: "text/html" });
-      const url = URL.createObjectURL(blob);
-      if (previewUrl) URL.revokeObjectURL(previewUrl);
-      setPreviewUrl(url);
-      setShowPreview(true);
-    } catch {
-      toast("미리보기 생성 실패", "error");
-    }
-    setPreviewLoading(false);
-  };
-
-  const closePreview = () => {
-    setShowPreview(false);
-    if (previewUrl) { URL.revokeObjectURL(previewUrl); setPreviewUrl(null); }
   };
 
   const handleSort = (key: typeof sortKey) => {
@@ -201,11 +151,10 @@ export default function NewsTable() {
         <div className="ml-auto flex gap-2 w-full sm:w-auto mt-2 sm:mt-0">
           {total > 0 && (
             <button
-              onClick={openPreview}
-              disabled={previewLoading}
-              className="flex-1 sm:flex-none px-3 sm:px-4 py-2 bg-gray-100 hover:bg-gray-200 disabled:bg-gray-50 text-gray-700 disabled:text-gray-400 rounded-lg text-xs sm:text-sm font-medium transition border border-gray-200"
+              onClick={() => window.open("/newsletter", "_blank")}
+              className="flex-1 sm:flex-none px-3 sm:px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-xs sm:text-sm font-medium transition border border-gray-200"
             >
-              {previewLoading ? "AI 요약 생성 중..." : "📧 미리보기"}
+              📧 뉴스레터 보기
             </button>
           )}
           <button
@@ -450,27 +399,6 @@ export default function NewsTable() {
         </>
       )}
 
-      {/* Newsletter Preview Modal */}
-      {showPreview && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="relative w-[95vw] h-[90vh] bg-white rounded-lg border border-gray-200 shadow-xl overflow-hidden">
-            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
-              <h3 className="text-sm font-semibold text-gray-900">뉴스레터 미리보기</h3>
-              <button
-                onClick={closePreview}
-                className="text-gray-400 hover:text-gray-700 text-lg"
-              >
-                ✕
-              </button>
-            </div>
-            <iframe
-              src={previewUrl || "/api/newsletter/preview"}
-              className="w-full h-[calc(100%-48px)]"
-              title="Newsletter Preview"
-            />
-          </div>
-        </div>
-      )}
     </div>
   );
 }

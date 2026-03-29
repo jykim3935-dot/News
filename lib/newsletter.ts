@@ -11,15 +11,6 @@ function urgencyColor(u: string | null): string {
   }
 }
 
-function urgencyLabel(u: string | null): string {
-  switch (u) {
-    case "red": return "긴급";
-    case "yellow": return "주의";
-    case "green": return "참고";
-    default: return "참고";
-  }
-}
-
 function categoryLabel(c: string | null): string {
   const m: Record<string, string> = {
     competitive: "경쟁", market: "시장", regulation: "규제",
