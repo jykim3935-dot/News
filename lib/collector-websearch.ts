@@ -1,5 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
-import { WEB_SEARCH_PROMPTS, KEYWORD_EXPANSION_PROMPT } from "./prompts";
+import { WEB_SEARCH_PROMPTS } from "./prompts";
 import type { ContentType, Article, KeywordGroup, Source } from "./supabase";
 import { CONTENT_TYPES, supabase, isSupabaseConfigured } from "./supabase";
 import { localStore } from "./local-store";
@@ -48,7 +48,9 @@ async function getEnabledKeywordGroups(): Promise<KeywordGroup[]> {
         .eq("enabled", true)
         .order("priority", { ascending: true });
       if (data?.length) return data as KeywordGroup[];
-    } catch { /* fall through */ }
+    } catch (e) {
+      console.error("[websearch] Failed to load keyword groups from DB:", e);
+    }
   }
   const local = localStore
     .select<KeywordGroup>("keyword_groups")
@@ -69,39 +71,16 @@ async function getWebSearchSources(): Promise<Source[]> {
         .eq("type", "websearch")
         .eq("enabled", true);
       if (data?.length) return data as Source[];
-    } catch { /* fall through */ }
+    } catch (e) {
+      console.error("[websearch] Failed to load websearch sources from DB:", e);
+    }
   }
   const local = localStore
     .select<Source>("sources")
     .filter((s) => s.type === "websearch" && s.enabled);
   if (local.length > 0) return local;
 
-  // Fallback to built-in defaults
   return DEFAULT_SOURCES.filter((s) => s.type === "websearch" && s.enabled) as unknown as Source[];
-}
-
-async function expandKeywords(keywords: string[]): Promise<string[]> {
-  try {
-    const response = await anthropic.messages.create({
-      model: "claude-sonnet-4-20250514",
-      max_tokens: 1024,
-      messages: [
-        {
-          role: "user",
-          content: `${KEYWORD_EXPANSION_PROMPT} ${keywords.join(", ")}`,
-        },
-      ],
-    });
-
-    const textBlock = response.content.find((b) => b.type === "text");
-    if (!textBlock || textBlock.type !== "text") return [];
-
-    const parsed = safeParseJSON(textBlock.text);
-    return (parsed?.expanded_keywords as string[]) || [];
-  } catch (error) {
-    console.error("[websearch] Keyword expansion error:", error);
-    return [];
-  }
 }
 
 async function searchByContentType(
@@ -131,10 +110,19 @@ async function searchByContentType(
     });
 
     const textBlock = response.content.find((b) => b.type === "text");
-    if (!textBlock || textBlock.type !== "text") return [];
+    if (!textBlock || textBlock.type !== "text") {
+      console.warn(`[websearch] No text block for ${contentType}. Content types: ${response.content.map(b => b.type).join(", ")}`);
+      return [];
+    }
 
     const parsed = safeParseJSON(textBlock.text);
-    const articles: RawArticle[] = (parsed?.articles as RawArticle[]) || [];
+    if (!parsed) {
+      console.warn(`[websearch] JSON parse failed for ${contentType}. Raw: ${textBlock.text.slice(0, 200)}`);
+      return [];
+    }
+
+    const articles: RawArticle[] = (parsed.articles as RawArticle[]) || [];
+    console.log(`[websearch] ${contentType}: ${articles.length} articles parsed`);
 
     return articles.map((a) => ({
       title: a.title,
@@ -146,39 +134,44 @@ async function searchByContentType(
       matched_keywords: keywords.slice(0, 5),
     }));
   } catch (error) {
-    console.error(`[websearch] Error for ${contentType}:`, error);
+    const msg = error instanceof Error ? error.message : String(error);
+    console.error(`[websearch] API error for ${contentType}: ${msg}`);
     return [];
   }
 }
 
 /**
  * Search using individual websearch-type source records.
- * Each source has a name/URL that serves as a search query.
- * Sources are batched by content_type to reduce API calls.
+ * Sources are batched by content_type, up to 6 per API call.
+ * Batches run in parallel (max 3 concurrent).
  */
 async function searchBySourceRecords(
   sources: Source[]
 ): Promise<Partial<Article>[]> {
   if (sources.length === 0) return [];
 
-  // Group sources by content_type to batch searches
+  // Group sources by content_type, batch 6 per call
+  const tasks: { contentType: ContentType; batch: Source[] }[] = [];
   const byType = new Map<ContentType, Source[]>();
   for (const s of sources) {
     const group = byType.get(s.content_type) || [];
     group.push(s);
     byType.set(s.content_type, group);
   }
-
-  const allArticles: Partial<Article>[] = [];
-
   for (const [contentType, typeSources] of byType) {
-    // Batch up to 4 sources per search to reduce API calls
-    for (let i = 0; i < typeSources.length; i += 4) {
-      const batch = typeSources.slice(i, i + 4);
-      const sourceNames = batch.map((s) => s.name).join(", ");
-      const searchTerms = batch.map((s) => s.url).join(" | ");
+    for (let i = 0; i < typeSources.length; i += 6) {
+      tasks.push({ contentType, batch: typeSources.slice(i, i + 6) });
+    }
+  }
 
-      const prompt = `당신은 ACRYL Inc.의 시장 인텔리전스 분석가입니다.
+  // Run in parallel batches of 3
+  const allArticles: Partial<Article>[] = [];
+  for (let i = 0; i < tasks.length; i += 3) {
+    const chunk = tasks.slice(i, i + 3);
+    const results = await Promise.allSettled(
+      chunk.map(async ({ contentType, batch }) => {
+        const sourceNames = batch.map((s) => s.name).join(", ");
+        const prompt = `당신은 ACRYL Inc.의 시장 인텔리전스 분석가입니다.
 다음 기관/출처에서 최근 7일 이내 발표된 최신 콘텐츠를 검색하세요:
 ${batch.map((s) => `- ${s.name}: ${s.description || ""} (${s.url})`).join("\n")}
 
@@ -199,7 +192,6 @@ AI 인프라, GPU 클라우드, MLOps, AI 에이전트, 헬스케어 AI와 관�
 
 10건 이내로 반환하세요. JSON만 반환하세요.`;
 
-      try {
         const webSearchTool = {
           type: "web_search_20250305" as const,
           name: "web_search" as const,
@@ -213,35 +205,41 @@ AI 인프라, GPU 클라우드, MLOps, AI 에이전트, 헬스케어 AI와 관�
           messages: [
             {
               role: "user",
-              content: `${prompt}\n\n검색 대상: ${sourceNames}\n검색어: ${searchTerms}`,
+              content: `${prompt}\n\n검색 대상: ${sourceNames}`,
             },
           ],
         });
 
         const textBlock = response.content.find((b) => b.type === "text");
-        if (textBlock && textBlock.type === "text") {
-          const parsed = safeParseJSON(textBlock.text);
-          const articles: RawArticle[] = (parsed?.articles as RawArticle[]) || [];
+        if (!textBlock || textBlock.type !== "text") return [];
 
-          allArticles.push(
-            ...articles.map((a) => ({
-              title: a.title,
-              url: a.url,
-              source: a.source,
-              content_type: contentType,
-              published_at: a.published_at,
-              summary: a.summary,
-              matched_keywords: [sourceNames],
-            }))
-          );
-          console.log(`[websearch] Source batch [${sourceNames}]: ${articles.length} articles`);
+        const parsed = safeParseJSON(textBlock.text);
+        if (!parsed) {
+          console.warn(`[websearch] Source batch JSON parse failed [${sourceNames}]. Raw: ${textBlock.text.slice(0, 200)}`);
+          return [];
         }
-      } catch (error) {
-        console.error(`[websearch] Source search error [${sourceNames}]:`, error);
-      }
 
-      await new Promise((r) => setTimeout(r, 1500));
+        const articles: RawArticle[] = (parsed.articles as RawArticle[]) || [];
+        console.log(`[websearch] Source batch [${sourceNames}]: ${articles.length} articles`);
+
+        return articles.map((a) => ({
+          title: a.title,
+          url: a.url,
+          source: a.source,
+          content_type: contentType,
+          published_at: a.published_at,
+          summary: a.summary,
+          matched_keywords: [sourceNames],
+        }));
+      })
+    );
+
+    for (const r of results) {
+      if (r.status === "fulfilled") allArticles.push(...r.value);
+      else console.error("[websearch] Source batch failed:", r.reason);
     }
+
+    if (i + 3 < tasks.length) await new Promise((r) => setTimeout(r, 500));
   }
 
   return allArticles;
@@ -252,52 +250,46 @@ export async function collectViaWebSearch(
 ): Promise<Partial<Article>[]> {
   const allArticles: Partial<Article>[] = [];
 
-  // Part 1: Keyword-based content type searches
+  // Part 1: Keyword-based content type searches — parallel in batches of 4
   const keywordGroups = await getEnabledKeywordGroups();
 
   if (keywordGroups?.length) {
+    // Build search tasks for each content type
+    const searchTasks: { ct: ContentType; keywords: string[] }[] = [];
     for (const ct of CONTENT_TYPES) {
       const relevantGroups = keywordGroups.filter(
-        (g) =>
-          g.content_types.length === 0 || g.content_types.includes(ct)
+        (g) => g.content_types.length === 0 || g.content_types.includes(ct)
       );
-
       if (relevantGroups.length === 0) continue;
+      const keywords = relevantGroups.flatMap((g) => g.keywords).slice(0, 10);
+      searchTasks.push({ ct, keywords });
+    }
 
-      const keywords = relevantGroups
-        .flatMap((g) => g.keywords)
-        .slice(0, 10);
+    console.log(`[websearch] ${searchTasks.length} content types to search`);
 
-      // Round 1: Search with original keywords
-      const round1 = await searchByContentType(ct, keywords);
-      allArticles.push(
-        ...round1.map((a) => ({ ...a, batch_id: batchId }))
+    // Run 4 content types in parallel per batch
+    for (let i = 0; i < searchTasks.length; i += 4) {
+      const batch = searchTasks.slice(i, i + 4);
+      const results = await Promise.allSettled(
+        batch.map(async ({ ct, keywords }) => {
+          const articles = await searchByContentType(ct, keywords);
+          console.log(`[websearch] Content type [${ct}]: ${articles.length} articles`);
+          return articles.map((a) => ({ ...a, batch_id: batchId }));
+        })
       );
-      console.log(`[websearch] Content type [${ct}]: ${round1.length} articles`);
 
-      await new Promise((r) => setTimeout(r, 1500));
-
-      // Round 2: Expand keywords for high-priority types
-      if (["news", "report", "consulting", "government", "research"].includes(ct)) {
-        const expanded = await expandKeywords(keywords.slice(0, 5));
-        if (expanded.length > 0) {
-          await new Promise((r) => setTimeout(r, 1000));
-          const round2 = await searchByContentType(ct, expanded);
-          allArticles.push(
-            ...round2.map((a) => ({ ...a, batch_id: batchId }))
-          );
-          if (round2.length > 0) {
-            console.log(`[websearch] Content type [${ct}] expanded: ${round2.length} articles`);
-          }
-        }
-        await new Promise((r) => setTimeout(r, 1500));
+      for (const r of results) {
+        if (r.status === "fulfilled") allArticles.push(...r.value);
+        else console.error("[websearch] Content type search failed:", r.reason);
       }
+
+      if (i + 4 < searchTasks.length) await new Promise((r) => setTimeout(r, 500));
     }
   } else {
     console.log("[websearch] No keyword groups found, skipping keyword-based search");
   }
 
-  // Part 2: Source-record-based searches (websearch type sources)
+  // Part 2: Source-record-based searches (parallel)
   const webSources = await getWebSearchSources();
   if (webSources.length > 0) {
     console.log(`[websearch] Searching ${webSources.length} websearch source records...`);

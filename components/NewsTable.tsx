@@ -6,20 +6,14 @@ import { CONTENT_TYPES } from "@/lib/supabase";
 import { useToast } from "@/components/Toast";
 
 const CONTENT_TYPE_LABELS: Record<ContentType, string> = {
-  news: "📰 뉴스",
-  report: "📊 보고서",
-  research: "🎓 학술",
-  consulting: "💼 컨설팅",
-  government: "🏛️ 정부정책",
-  global: "🌍 글로벌",
-  investment: "💰 투자",
-  blog: "🔬 블로그",
-};
-
-const URGENCY_STYLES: Record<string, { bg: string; text: string; label: string }> = {
-  red: { bg: "bg-red-100", text: "text-red-700", label: "🔴 긴급" },
-  yellow: { bg: "bg-yellow-100", text: "text-yellow-700", label: "🟡 주의" },
-  green: { bg: "bg-green-100", text: "text-green-700", label: "🟢 참고" },
+  news: "뉴스",
+  report: "보고서",
+  research: "학술",
+  consulting: "컨설팅",
+  government: "정부정책",
+  global: "글로벌",
+  investment: "투자",
+  blog: "블로그",
 };
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -36,9 +30,6 @@ export default function NewsTable() {
   const [loading, setLoading] = useState(true);
   const [running, setRunning] = useState(false);
   const [filter, setFilter] = useState<ContentType | "all">("all");
-  const [expandedId, setExpandedId] = useState<string | null>(null);
-  const [sortKey, setSortKey] = useState<"relevance_score" | "urgency" | "content_type">("relevance_score");
-  const [sortAsc, setSortAsc] = useState(false);
   const { toast } = useToast();
 
   const fetchArticles = async () => {
@@ -63,14 +54,13 @@ export default function NewsTable() {
       const res = await fetch("/api/pipeline/run", { method: "POST" });
       const data = await res.json();
       if (data.status === "completed" || data.status === "failed") {
-        // Use articles directly from pipeline response (Vercel /tmp is ephemeral)
         if (Array.isArray(data.articles) && data.articles.length > 0) {
           setArticles(data.articles);
           setLoading(false);
         }
         const count = data.articlesCount || data.articles?.length || 0;
         if (data.errors?.length > 0 && count > 0) {
-          toast(`수집 완료! ${count}건 수집 (일부 오류: ${data.errors.length}건)`, "success");
+          toast(`수집 완료! ${count}건 (일부 오류: ${data.errors.length}건)`, "success");
         } else if (count > 0) {
           toast(`수집 완료! ${count}건 수집, ${data.sent || 0}건 발송`, "success");
         } else {
@@ -87,318 +77,202 @@ export default function NewsTable() {
     setRunning(false);
   };
 
-  const handleSort = (key: typeof sortKey) => {
-    if (sortKey === key) {
-      setSortAsc(!sortAsc);
-    } else {
-      setSortKey(key);
-      setSortAsc(false);
-    }
-  };
+  const filtered = filter === "all" ? articles : articles.filter((a) => a.content_type === filter);
 
-  const urgencyOrder: Record<string, number> = { red: 3, yellow: 2, green: 1 };
-
-  const filtered = (
-    filter === "all"
-      ? articles
-      : articles.filter((a) => a.content_type === filter)
-  ).sort((a, b) => {
-    let cmp = 0;
-    if (sortKey === "relevance_score") {
-      cmp = (a.relevance_score || 0) - (b.relevance_score || 0);
-    } else if (sortKey === "urgency") {
-      cmp = (urgencyOrder[a.urgency || ""] || 0) - (urgencyOrder[b.urgency || ""] || 0);
-    } else if (sortKey === "content_type") {
-      cmp = (a.content_type || "").localeCompare(b.content_type || "");
-    }
-    return sortAsc ? cmp : -cmp;
-  });
+  // Group by urgency
+  const redArticles = filtered
+    .filter((a) => a.urgency === "red")
+    .sort((a, b) => (b.relevance_score || 0) - (a.relevance_score || 0));
+  const yellowArticles = filtered
+    .filter((a) => a.urgency === "yellow")
+    .sort((a, b) => (b.relevance_score || 0) - (a.relevance_score || 0));
+  const otherArticles = filtered
+    .filter((a) => a.urgency !== "red" && a.urgency !== "yellow")
+    .sort((a, b) => (b.relevance_score || 0) - (a.relevance_score || 0));
 
   const total = articles.length;
   const redCount = articles.filter((a) => a.urgency === "red").length;
   const yellowCount = articles.filter((a) => a.urgency === "yellow").length;
-  const greenCount = articles.filter((a) => a.urgency === "green").length;
   const avgScore =
     total > 0
       ? (articles.reduce((s, a) => s + (a.relevance_score || 0), 0) / total).toFixed(1)
       : "0";
 
-  return (
-    <div className="space-y-4">
-      {/* Summary Bar */}
-      <div className="flex flex-wrap items-center gap-3 sm:gap-6 p-3 sm:p-4 bg-white border border-gray-200 rounded-lg shadow-sm">
-        <div>
-          <span className="text-gray-500 text-xs sm:text-sm">전체 </span>
-          <span className="text-gray-900 text-lg sm:text-xl font-bold">{total}건</span>
-        </div>
-        <div className="flex gap-2 sm:gap-3 text-xs sm:text-sm">
-          <span className="text-red-600">🔴 {redCount}</span>
-          <span className="text-yellow-600">🟡 {yellowCount}</span>
-          <span className="text-green-600">🟢 {greenCount}</span>
-        </div>
-        <div>
-          <span className="text-gray-500 text-xs sm:text-sm">평균 관련도 </span>
-          <span className="text-blue-600 font-semibold">{avgScore}/10</span>
-        </div>
-        <div className="hidden lg:flex gap-2 text-xs text-gray-500">
-          {CONTENT_TYPES.map((ct) => {
-            const count = articles.filter((a) => a.content_type === ct).length;
-            return count > 0 ? (
-              <span key={ct}>{CONTENT_TYPE_LABELS[ct]} {count}</span>
-            ) : null;
-          })}
-        </div>
-        <div className="ml-auto flex gap-2 w-full sm:w-auto mt-2 sm:mt-0">
-          {total > 0 && (
-            <button
-              onClick={() => window.open("/newsletter", "_blank")}
-              className="flex-1 sm:flex-none px-3 sm:px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-xs sm:text-sm font-medium transition border border-gray-200"
-            >
-              📧 뉴스레터 보기
-            </button>
+  const renderArticle = (article: Article) => {
+    const score = article.relevance_score || 0;
+    const scoreColor =
+      score >= 8 ? "text-red-600 font-bold" : score >= 6 ? "text-blue-600 font-semibold" : "text-gray-500";
+
+    return (
+      <div key={article.id} className="py-2.5 border-b border-gray-100 last:border-0">
+        {/* Line 1: Score + Type + Category + Title + Source */}
+        <div className="flex items-start gap-1.5 flex-wrap">
+          <span className={`text-xs ${scoreColor} flex-shrink-0 pt-0.5`}>
+            [{score > 0 ? `${score}/10` : "-"}]
+          </span>
+          <span className="text-[10px] text-gray-400 bg-gray-100 px-1 rounded flex-shrink-0 mt-0.5">
+            {CONTENT_TYPE_LABELS[article.content_type] || article.content_type}
+          </span>
+          {article.category && (
+            <span className="text-[10px] text-gray-400 bg-gray-50 px-1 rounded flex-shrink-0 mt-0.5">
+              {CATEGORY_LABELS[article.category] || article.category}
+            </span>
           )}
-          <button
-            onClick={handleRun}
-            disabled={running}
-            className="flex-1 sm:flex-none px-3 sm:px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white rounded-lg text-xs sm:text-sm font-medium transition"
+          <a
+            href={article.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-sm text-blue-700 hover:text-blue-900 hover:underline leading-tight flex-1 min-w-0"
           >
-            {running ? "수집 중..." : "🚀 수집 시작"}
-          </button>
+            {article.title_ko || article.title}
+          </a>
+          {article.source && (
+            <span className="text-[10px] text-gray-400 flex-shrink-0 mt-0.5">
+              {article.source}
+            </span>
+          )}
         </div>
+
+        {/* Line 2: Summary */}
+        {(article.summary_ko || article.summary) && (
+          <p className="text-xs text-gray-600 mt-1 pl-1 leading-relaxed">
+            {article.summary_ko || article.summary}
+          </p>
+        )}
+
+        {/* Line 3: Impact */}
+        {article.impact_comment && (
+          <p className="text-xs mt-1 pl-1 leading-relaxed">
+            <span className="font-semibold text-gray-800">ACRYL 임팩트:</span>{" "}
+            <span className="text-gray-700">{article.impact_comment}</span>
+          </p>
+        )}
+
+        {/* Line 4: Deep summary */}
+        {article.deep_summary && (
+          <p className="text-xs text-gray-500 mt-1 pl-1 leading-relaxed italic">
+            {article.deep_summary}
+          </p>
+        )}
+
+        {/* Line 5: Keywords + Key findings */}
+        {(article.matched_keywords?.length > 0 || article.key_findings?.length > 0) && (
+          <div className="flex flex-wrap gap-1 mt-1.5 pl-1">
+            {article.matched_keywords?.map((k) => (
+              <span key={k} className="text-[10px] bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded">
+                {k}
+              </span>
+            ))}
+            {article.key_findings?.length > 0 && (
+              <span className="text-[10px] text-gray-500 italic">
+                | {article.key_findings.join(" / ")}
+              </span>
+            )}
+          </div>
+        )}
+
+        {/* Action items */}
+        {article.action_items?.length > 0 && (
+          <p className="text-[10px] text-orange-600 mt-1 pl-1">
+            Action: {article.action_items.join(" / ")}
+          </p>
+        )}
+      </div>
+    );
+  };
+
+  const renderSection = (
+    label: string,
+    emoji: string,
+    bgColor: string,
+    borderColor: string,
+    items: Article[]
+  ) => {
+    if (items.length === 0) return null;
+    return (
+      <div className="mb-2">
+        <div className={`flex items-center gap-2 py-1.5 px-3 ${bgColor} border-l-4 ${borderColor}`}>
+          <span className="text-sm font-bold text-gray-900">{emoji} {label}</span>
+          <span className="text-xs text-gray-500">{items.length}건</span>
+        </div>
+        <div className="px-3">
+          {items.map((a) => renderArticle(a))}
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div className="space-y-3">
+      {/* Summary + Action */}
+      <div className="flex flex-wrap items-center gap-3 sm:gap-4 p-3 bg-white border border-gray-200 rounded-lg shadow-sm">
+        <div>
+          <span className="text-gray-500 text-xs">전체 </span>
+          <span className="text-gray-900 text-lg font-bold">{total}건</span>
+        </div>
+        <div className="flex gap-2 text-xs">
+          <span className="text-red-600 font-medium">긴급 {redCount}</span>
+          <span className="text-yellow-600 font-medium">주의 {yellowCount}</span>
+          <span className="text-green-600">참고 {total - redCount - yellowCount}</span>
+        </div>
+        <div>
+          <span className="text-gray-500 text-xs">평균 </span>
+          <span className="text-blue-600 font-semibold text-sm">{avgScore}/10</span>
+        </div>
+        <button
+          onClick={handleRun}
+          disabled={running}
+          className="ml-auto px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white rounded-lg text-xs sm:text-sm font-medium transition"
+        >
+          {running ? "수집 중..." : "수집 시작"}
+        </button>
       </div>
 
       {/* Content Type Filter */}
-      <div className="flex gap-1.5 sm:gap-2 overflow-x-auto pb-1">
+      <div className="flex gap-1.5 overflow-x-auto pb-1">
         <button
           onClick={() => setFilter("all")}
-          className={`px-2.5 sm:px-3 py-1.5 rounded-md text-xs sm:text-sm transition whitespace-nowrap flex-shrink-0 ${
+          className={`px-2.5 py-1 rounded text-xs transition whitespace-nowrap flex-shrink-0 ${
             filter === "all"
               ? "bg-blue-600 text-white"
-              : "bg-white text-gray-600 hover:text-gray-900 border border-gray-200"
+              : "bg-white text-gray-500 hover:text-gray-700 border border-gray-200"
           }`}
         >
           전체
         </button>
-        {CONTENT_TYPES.map((ct) => (
-          <button
-            key={ct}
-            onClick={() => setFilter(ct)}
-            className={`px-2.5 sm:px-3 py-1.5 rounded-md text-xs sm:text-sm transition whitespace-nowrap flex-shrink-0 ${
-              filter === ct
-                ? "bg-blue-600 text-white"
-                : "bg-white text-gray-600 hover:text-gray-900 border border-gray-200"
-            }`}
-          >
-            {CONTENT_TYPE_LABELS[ct]}
-          </button>
-        ))}
+        {CONTENT_TYPES.map((ct) => {
+          const count = articles.filter((a) => a.content_type === ct).length;
+          if (count === 0) return null;
+          return (
+            <button
+              key={ct}
+              onClick={() => setFilter(ct)}
+              className={`px-2.5 py-1 rounded text-xs transition whitespace-nowrap flex-shrink-0 ${
+                filter === ct
+                  ? "bg-blue-600 text-white"
+                  : "bg-white text-gray-500 hover:text-gray-700 border border-gray-200"
+              }`}
+            >
+              {CONTENT_TYPE_LABELS[ct]} {count}
+            </button>
+          );
+        })}
       </div>
 
-      {/* Articles */}
+      {/* Articles by Urgency */}
       {loading ? (
-        <div className="text-center py-12 text-gray-400">로딩 중...</div>
+        <div className="text-center py-12 text-gray-400 text-sm">로딩 중...</div>
       ) : filtered.length === 0 ? (
-        <div className="text-center py-12 text-gray-400">
+        <div className="text-center py-12 text-gray-400 text-sm">
           수집된 콘텐츠가 없습니다. &quot;수집 시작&quot; 버튼을 클릭하세요.
         </div>
       ) : (
-        <>
-          {/* Desktop Table */}
-          <div className="hidden md:block border border-gray-200 rounded-lg overflow-hidden shadow-sm">
-            <table className="w-full">
-              <thead>
-                <tr className="bg-gray-50 border-b-2 border-gray-200">
-                  <th className="px-3 py-2 text-left text-gray-500 text-xs font-semibold w-8">#</th>
-                  <th
-                    className="px-3 py-2 text-left text-gray-500 text-xs font-semibold cursor-pointer hover:text-gray-700"
-                    onClick={() => handleSort("urgency")}
-                  >
-                    긴급도 {sortKey === "urgency" ? (sortAsc ? "↑" : "↓") : ""}
-                  </th>
-                  <th
-                    className="px-3 py-2 text-left text-gray-500 text-xs font-semibold cursor-pointer hover:text-gray-700"
-                    onClick={() => handleSort("relevance_score")}
-                  >
-                    관련도 {sortKey === "relevance_score" ? (sortAsc ? "↑" : "↓") : ""}
-                  </th>
-                  <th className="px-3 py-2 text-left text-gray-500 text-xs font-semibold">카테고리</th>
-                  <th
-                    className="px-3 py-2 text-left text-gray-500 text-xs font-semibold cursor-pointer hover:text-gray-700"
-                    onClick={() => handleSort("content_type")}
-                  >
-                    유형 {sortKey === "content_type" ? (sortAsc ? "↑" : "↓") : ""}
-                  </th>
-                  <th className="px-3 py-2 text-left text-gray-500 text-xs font-semibold">제목</th>
-                  <th className="px-3 py-2 text-left text-gray-500 text-xs font-semibold">출처</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map((article, i) => {
-                  const urgStyle = URGENCY_STYLES[article.urgency || ""] || {
-                    bg: "",
-                    text: "text-gray-400",
-                    label: "-",
-                  };
-                  const isExpanded = expandedId === article.id;
-                  return (
-                    <tr key={article.id} className="group">
-                      <td colSpan={7} className="p-0">
-                        <div
-                          className="flex items-center cursor-pointer hover:bg-blue-50 border-b border-gray-100"
-                          onClick={() => setExpandedId(isExpanded ? null : article.id)}
-                        >
-                          <div className="px-3 py-2.5 text-gray-400 text-xs w-8">{i + 1}</div>
-                          <div className="px-3 py-2.5 w-20">
-                            <span className={`text-xs ${urgStyle.bg} ${urgStyle.text} px-2 py-0.5 rounded`}>
-                              {urgStyle.label}
-                            </span>
-                          </div>
-                          <div className="px-3 py-2.5 w-28">
-                            <div className="flex items-center gap-1">
-                              <div className="w-16 h-2 bg-gray-100 rounded-full overflow-hidden">
-                                <div
-                                  className="h-full bg-blue-500 rounded-full"
-                                  style={{ width: `${(article.relevance_score || 0) * 10}%` }}
-                                />
-                              </div>
-                              <span className="text-blue-600 text-xs">{article.relevance_score || "-"}</span>
-                            </div>
-                          </div>
-                          <div className="px-3 py-2.5 w-16">
-                            <span className="text-xs bg-gray-100 border border-gray-200 rounded px-1.5 py-0.5 text-gray-600">
-                              {CATEGORY_LABELS[article.category || ""] || "-"}
-                            </span>
-                          </div>
-                          <div className="px-3 py-2.5 w-20">
-                            <span className="text-xs text-gray-500">
-                              {CONTENT_TYPE_LABELS[article.content_type] || article.content_type}
-                            </span>
-                          </div>
-                          <div className="px-3 py-2.5 flex-1 min-w-0">
-                            <a
-                              href={article.url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-blue-600 hover:text-blue-800 text-sm truncate block"
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              {article.title_ko || article.title}
-                            </a>
-                          </div>
-                          <div className="px-3 py-2.5 w-24 text-gray-500 text-xs truncate">
-                            {article.source || "-"}
-                          </div>
-                        </div>
-                        {isExpanded && (
-                          <div className="px-6 py-3 bg-blue-50 border-b border-gray-200">
-                            <div className="text-sm text-gray-700 mb-2">
-                              <strong className="text-gray-900">ACRYL 임팩트:</strong>{" "}
-                              {article.impact_comment || "분석 없음"}
-                            </div>
-                            {article.summary && (
-                              <div className="text-xs text-gray-500">
-                                <strong>요약:</strong> {article.summary_ko || article.summary}
-                              </div>
-                            )}
-                            {article.matched_keywords?.length > 0 && (
-                              <div className="flex gap-1 mt-2">
-                                {article.matched_keywords.map((k) => (
-                                  <span
-                                    key={k}
-                                    className="text-xs bg-white border border-gray-300 rounded px-1.5 py-0.5 text-gray-600"
-                                  >
-                                    {k}
-                                  </span>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Mobile Card View */}
-          <div className="md:hidden space-y-3">
-            {filtered.map((article, i) => {
-              const urgStyle = URGENCY_STYLES[article.urgency || ""] || {
-                bg: "",
-                text: "text-gray-400",
-                label: "-",
-              };
-              const isExpanded = expandedId === article.id;
-              return (
-                <div
-                  key={article.id}
-                  className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden"
-                >
-                  <div
-                    className="p-3 cursor-pointer active:bg-gray-50"
-                    onClick={() => setExpandedId(isExpanded ? null : article.id)}
-                  >
-                    <div className="flex items-center gap-2 mb-1.5">
-                      <span className="text-gray-400 text-xs">{i + 1}</span>
-                      <span className={`text-xs ${urgStyle.bg} ${urgStyle.text} px-2 py-0.5 rounded`}>
-                        {urgStyle.label}
-                      </span>
-                      <span className="text-xs bg-gray-100 border border-gray-200 rounded px-1.5 py-0.5 text-gray-600">
-                        {CATEGORY_LABELS[article.category || ""] || "-"}
-                      </span>
-                      <span className="text-blue-600 text-xs ml-auto font-medium">
-                        {article.relevance_score || "-"}/10
-                      </span>
-                    </div>
-                    <a
-                      href={article.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-blue-600 hover:text-blue-800 text-sm font-medium line-clamp-2 block"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      {article.title_ko || article.title}
-                    </a>
-                    <div className="flex items-center gap-2 mt-1.5 text-xs text-gray-500">
-                      <span>{CONTENT_TYPE_LABELS[article.content_type] || article.content_type}</span>
-                      <span>·</span>
-                      <span>{article.source || "-"}</span>
-                    </div>
-                  </div>
-                  {isExpanded && (
-                    <div className="px-3 py-3 bg-blue-50 border-t border-gray-200">
-                      <div className="text-sm text-gray-700 mb-2">
-                        <strong className="text-gray-900">ACRYL 임팩트:</strong>{" "}
-                        {article.impact_comment || "분석 없음"}
-                      </div>
-                      {article.summary && (
-                        <div className="text-xs text-gray-500">
-                          <strong>요약:</strong> {article.summary_ko || article.summary}
-                        </div>
-                      )}
-                      {article.matched_keywords?.length > 0 && (
-                        <div className="flex flex-wrap gap-1 mt-2">
-                          {article.matched_keywords.map((k) => (
-                            <span
-                              key={k}
-                              className="text-xs bg-white border border-gray-300 rounded px-1.5 py-0.5 text-gray-600"
-                            >
-                              {k}
-                            </span>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </>
+        <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
+          {renderSection("긴급", "🔴", "bg-red-50", "border-red-500", redArticles)}
+          {renderSection("주의", "🟡", "bg-yellow-50", "border-yellow-500", yellowArticles)}
+          {renderSection("참고", "🟢", "bg-gray-50", "border-gray-300", otherArticles)}
+        </div>
       )}
-
     </div>
   );
 }
