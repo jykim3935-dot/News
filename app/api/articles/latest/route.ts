@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 import { localStore } from "@/lib/local-store";
-import type { PipelineRun, Article } from "@/lib/supabase";
+import type { PipelineRun, Article, Trend } from "@/lib/supabase";
 
 export const dynamic = "force-dynamic";
 
@@ -24,7 +24,17 @@ export async function GET() {
           .eq("batch_id", run.batch_id)
           .order("relevance_score", { ascending: false });
 
-        return NextResponse.json({ articles: articles || [], run });
+        const { data: trends } = await supabase
+          .from("trends")
+          .select("*")
+          .eq("batch_id", run.batch_id);
+
+        return NextResponse.json({
+          articles: articles || [],
+          run,
+          executiveBrief: run.executive_brief || "",
+          trends: trends || [],
+        });
       }
     } catch { /* fall through */ }
   }
@@ -39,12 +49,20 @@ export async function GET() {
 
   const latestRun = runs[0] || null;
   if (!latestRun) {
-    return NextResponse.json({ articles: [], run: null });
+    return NextResponse.json({ articles: [], run: null, executiveBrief: "", trends: [] });
   }
 
   const articles = localStore.select<Article>("articles")
     .filter((a) => a.batch_id === latestRun.batch_id)
     .sort((a, b) => (b.relevance_score || 0) - (a.relevance_score || 0));
 
-  return NextResponse.json({ articles, run: latestRun });
+  const trends = localStore.select<Trend>("trends")
+    .filter((t) => t.batch_id === latestRun.batch_id);
+
+  return NextResponse.json({
+    articles,
+    run: latestRun,
+    executiveBrief: latestRun.executive_brief || "",
+    trends,
+  });
 }

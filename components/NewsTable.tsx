@@ -51,6 +51,8 @@ export default function NewsTable() {
       const res = await fetch("/api/articles/latest");
       const data = await res.json();
       setArticles(data.articles || []);
+      setExecutiveBrief(data.executiveBrief || "");
+      setTrends(data.trends || []);
     } catch {
       console.error("Failed to fetch articles");
     }
