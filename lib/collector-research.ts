@@ -30,10 +30,20 @@ function safeParseJSON(text: string): Record<string, unknown> | null {
 }
 
 const RESEARCH_KEYWORD_SETS = [
+  // 기존
   ["GPU scheduling", "GPU cluster management", "multi-tenant GPU", "GPU orchestration"],
   ["model serving", "inference optimization", "LLM deployment", "vLLM", "TensorRT"],
   ["AI agent orchestration", "tool use LLM", "function calling", "MCP protocol"],
   ["medical AI diagnosis", "healthcare AI", "clinical AI", "pathology AI"],
+  // 탑티어 학회 확장
+  ["computer vision", "multimodal learning", "vision-language model", "image generation"],
+  ["natural language processing", "large language model", "instruction tuning", "RLHF", "DPO"],
+  ["reinforcement learning", "robotics AI", "embodied agent", "sim-to-real transfer"],
+  ["AI safety", "AI alignment", "red teaming LLM", "adversarial robustness"],
+  ["medical imaging AI", "clinical NLP", "drug discovery AI", "biomedical foundation model"],
+  ["distributed training", "federated learning", "data parallelism", "pipeline parallelism"],
+  ["graph neural network", "geometric deep learning", "GNN scalability"],
+  ["diffusion model", "generative AI", "text-to-image", "video generation model"],
 ];
 
 export async function collectResearch(

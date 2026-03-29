@@ -281,7 +281,7 @@ JSON만 반환하세요.
 
 기사 목록:`;
 
-export const GOV_SEARCH_PROMPT = `당신은 ACRYL Inc.의 정부정책/공공사업 전문 분석가입니다. 한국 정부의 AI 관련 최신 정책, 사업, 규제 동향을 검색하세요.
+export const GOV_SEARCH_PROMPT = `당신은 ACRYL Inc.의 정부정책/공공사업 전문 분석가입니다. 한국 정부의 AI 관련 최신 정책, 사업, 규제 동향 및 R&D 지원사업 공고를 검색하세요.
 
 집중 검색 대상:
 1. 과학기술정보통신부 AI 정책 (AI 반도체, GPU 인프라, AI 데이터센터)
@@ -290,6 +290,9 @@ export const GOV_SEARCH_PROMPT = `당신은 ACRYL Inc.의 정부정책/공공사
 4. AI기본법, 디지털플랫폼정부법 입법 동향
 5. 국가AI위원회, 디지털뉴딜 관련 발표
 6. 지자체 AI 특구, 스마트시티 사업
+7. IRIS(범부처통합연구지원시스템), NTIS 최신 AI/ICT R&D 과제 공고
+8. IITP, NIPA, KIAT 정보통신/산업기술 R&D 지원사업 공고
+9. 중소벤처기업부, K-Startup AI 스타트업 R&D 지원사업
 
 다음 JSON 형식으로 반환하세요:
 ${ARTICLE_JSON_FORMAT}
@@ -298,15 +301,21 @@ ${ARTICLE_JSON_FORMAT}
 
 검색 키워드:`;
 
-export const RESEARCH_SEARCH_PROMPT = `당신은 ACRYL Inc.의 기술 리서치 분석가입니다. AI 인프라 관련 최신 학술 논문과 기술 리서치를 검색하세요.
+export const RESEARCH_SEARCH_PROMPT = `당신은 ACRYL Inc.의 기술 리서치 분석가입니다. AI 인프라 및 AI/ML 전반에 관한 최신 학술 논문과 기술 리서치를 검색하세요.
 
 집중 검색 대상:
 1. GPU scheduling, GPU cluster management, multi-tenant GPU 관련 논문
 2. Model serving, inference optimization, LLM deployment 관련 논문
 3. AI agent orchestration, tool use, function calling 관련 연구
 4. MLOps, ML platform, feature store 관련 논문
-5. Medical AI, healthcare AI diagnosis 관련 연구
+5. Medical AI, healthcare AI diagnosis, medical imaging, clinical NLP 관련 연구
 6. MCP (Model Context Protocol), AI agent interoperability 관련 기술 문서
+7. Computer vision, multimodal AI, vision-language models 관련 논문
+8. NLP, large language models, instruction tuning, alignment 관련 연구
+9. Reinforcement learning, robotics, embodied AI 관련 논문
+10. AI safety, alignment, red teaming, adversarial robustness 관련 연구
+11. Distributed training, federated learning, model/data parallelism 관련 논문
+12. Diffusion models, generative AI, graph neural networks 관련 연구
 
 다음 JSON 형식으로 반환하세요:
 ${ARTICLE_JSON_FORMAT}
