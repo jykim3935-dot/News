@@ -25,6 +25,23 @@ const CATEGORY_LABELS: Record<string, string> = {
   investment: "투자",
 };
 
+function formatDate(dateStr: string | null | undefined): string {
+  if (!dateStr) return "";
+  try {
+    const d = new Date(dateStr);
+    const month = d.getMonth() + 1;
+    const day = d.getDate();
+    return `${month}/${day}`;
+  } catch {
+    return "";
+  }
+}
+
+function avgScoreOf(items: Article[]): string {
+  if (items.length === 0) return "0";
+  return (items.reduce((s, a) => s + (a.relevance_score || 0), 0) / items.length).toFixed(1);
+}
+
 export default function NewsTable() {
   const [articles, setArticles] = useState<Article[]>([]);
   const [loading, setLoading] = useState(true);
@@ -98,18 +115,32 @@ export default function NewsTable() {
       ? (articles.reduce((s, a) => s + (a.relevance_score || 0), 0) / total).toFixed(1)
       : "0";
 
+  // Category distribution
+  const catCounts: Record<string, number> = {};
+  for (const a of articles) {
+    if (a.category) {
+      catCounts[a.category] = (catCounts[a.category] || 0) + 1;
+    }
+  }
+
   const renderArticle = (article: Article) => {
     const score = article.relevance_score || 0;
     const scoreColor =
       score >= 8 ? "text-red-600 font-bold" : score >= 6 ? "text-blue-600 font-semibold" : "text-gray-500";
+    const dateStr = formatDate(article.published_at);
 
     return (
       <div key={article.id} className="py-2.5 border-b border-gray-100 last:border-0">
-        {/* Line 1: Score + Type + Category + Title + Source */}
+        {/* Line 1: Score + Date + Type + Category + Title + Source */}
         <div className="flex items-start gap-1.5 flex-wrap">
           <span className={`text-xs ${scoreColor} flex-shrink-0 pt-0.5`}>
             [{score > 0 ? `${score}/10` : "-"}]
           </span>
+          {dateStr && (
+            <span className="text-[10px] text-gray-400 flex-shrink-0 mt-0.5">
+              {dateStr}
+            </span>
+          )}
           <span className="text-[10px] text-gray-400 bg-gray-100 px-1 rounded flex-shrink-0 mt-0.5">
             {CONTENT_TYPE_LABELS[article.content_type] || article.content_type}
           </span>
@@ -189,11 +220,13 @@ export default function NewsTable() {
     items: Article[]
   ) => {
     if (items.length === 0) return null;
+    const sectionAvg = avgScoreOf(items);
     return (
       <div className="mb-2">
         <div className={`flex items-center gap-2 py-1.5 px-3 ${bgColor} border-l-4 ${borderColor}`}>
           <span className="text-sm font-bold text-gray-900">{emoji} {label}</span>
           <span className="text-xs text-gray-500">{items.length}건</span>
+          <span className="text-xs text-gray-400 ml-auto">평균 {sectionAvg}/10</span>
         </div>
         <div className="px-3">
           {items.map((a) => renderArticle(a))}
@@ -227,6 +260,19 @@ export default function NewsTable() {
           {running ? "수집 중..." : "수집 시작"}
         </button>
       </div>
+
+      {/* Category Distribution */}
+      {Object.keys(catCounts).length > 0 && (
+        <div className="flex gap-1.5 flex-wrap text-[10px] px-1">
+          {Object.entries(catCounts)
+            .sort((a, b) => b[1] - a[1])
+            .map(([cat, cnt]) => (
+              <span key={cat} className="bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded">
+                {CATEGORY_LABELS[cat] || cat} {cnt}
+              </span>
+            ))}
+        </div>
+      )}
 
       {/* Content Type Filter */}
       <div className="flex gap-1.5 overflow-x-auto pb-1">

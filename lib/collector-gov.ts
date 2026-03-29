@@ -30,9 +30,14 @@ function safeParseJSON(text: string): Record<string, unknown> | null {
 }
 
 const GOV_KEYWORD_SETS = [
+  // 기존: 정책/규제
   ["AI 정책", "인공지능 정책", "과기정통부 AI", "AI기본법", "디지털플랫폼정부"],
   ["공공 AI 인프라", "나라장터 GPU", "공공 클라우드", "AI 데이터센터 구축", "국가 AI 컴퓨팅"],
   ["AI 규제", "AI 윤리", "AI 안전", "디지털뉴딜", "국가AI위원회"],
+  // R&D 지원사업 공고
+  ["IRIS 공고", "범부처 R&D 과제", "NTIS 연구개발", "국책과제 공고", "정부지원사업 AI"],
+  ["IITP R&D 과제", "정보통신 R&D 공고", "NIPA 지원사업", "AI 바우처 사업"],
+  ["중소기업 R&D 지원", "K-Startup AI", "KIAT 기술개발", "SMTECH 지원사업", "기술사업화"],
 ];
 
 export async function collectGovPolicy(
