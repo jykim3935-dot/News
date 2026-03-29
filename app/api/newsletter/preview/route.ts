@@ -30,23 +30,24 @@ export async function POST(req: NextRequest) {
     let executiveBrief: string = body.executiveBrief || "";
     const trends: Trend[] = body.trends || [];
     const runId: string | null = body.runId || null;
+    let briefError: string | null = null;
 
     if (articles.length === 0) {
-      return NextResponse.json({ html: "", executiveBrief: "" });
+      return NextResponse.json({ html: "", executiveBrief: "", briefError: "기사가 없습니다" });
     }
 
     // If no brief available, generate on-the-fly
     let briefGenerated = false;
     if (!executiveBrief.trim() && articles.length > 0) {
-      console.log("[preview] No brief found, generating on-the-fly...");
+      console.log("[preview] No brief found, generating on-the-fly from", articles.length, "articles...");
       try {
         executiveBrief = await generateExecutiveBrief(articles);
-        briefGenerated = true;
-        console.log("[preview] Brief generated, length:", executiveBrief.length);
+        if (executiveBrief) {
+          briefGenerated = true;
+          console.log("[preview] Brief generated successfully, length:", executiveBrief.length);
 
-        // Fire-and-forget: save to DB for future use
-        if (executiveBrief && runId && isSupabaseConfigured()) {
-          (async () => {
+          // Await DB save to ensure persistence before response returns
+          if (runId && isSupabaseConfigured()) {
             try {
               await supabase
                 .from("pipeline_runs")
@@ -56,9 +57,13 @@ export async function POST(req: NextRequest) {
             } catch (err) {
               console.error("[preview] Failed to save brief:", err);
             }
-          })();
+          }
+        } else {
+          briefError = "AI 브리프 생성 결과가 비어있습니다. Vercel 로그를 확인하세요.";
+          console.error("[preview] generateExecutiveBrief returned empty string");
         }
       } catch (e) {
+        briefError = `AI 브리프 생성 실패: ${e instanceof Error ? e.message : String(e)}`;
         console.error("[preview] Brief generation failed:", e);
       }
     }
@@ -72,9 +77,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       html,
       executiveBrief: briefGenerated ? executiveBrief : undefined,
+      briefError,
     });
-  } catch {
-    return NextResponse.json({ html: "", executiveBrief: "" });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    console.error("[preview] Top-level error:", msg);
+    return NextResponse.json({ html: "", executiveBrief: "", briefError: `미리보기 오류: ${msg}` });
   }
 }
 

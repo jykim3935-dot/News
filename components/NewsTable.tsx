@@ -117,6 +117,10 @@ export default function NewsTable() {
       if (data.executiveBrief) {
         setExecutiveBrief(data.executiveBrief);
       }
+      // Show error if brief generation failed
+      if (data.briefError) {
+        toast(data.briefError, "error");
+      }
       const blob = new Blob([html], { type: "text/html" });
       const url = URL.createObjectURL(blob);
       if (previewUrl) URL.revokeObjectURL(previewUrl);
