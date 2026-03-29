@@ -40,6 +40,11 @@ function safeParseJSON(text: string): Record<string, unknown> | null {
 }
 
 async function getEnabledKeywordGroups(): Promise<KeywordGroup[]> {
+  const defaultGroups = DEFAULT_KEYWORD_GROUPS.filter(
+    (g) => g.enabled
+  ) as unknown as KeywordGroup[];
+
+  let dbGroups: KeywordGroup[] = [];
   if (isSupabaseConfigured()) {
     try {
       const { data } = await supabase
@@ -47,22 +52,35 @@ async function getEnabledKeywordGroups(): Promise<KeywordGroup[]> {
         .select("*")
         .eq("enabled", true)
         .order("priority", { ascending: true });
-      if (data?.length) return data as KeywordGroup[];
+      if (data?.length) dbGroups = data as KeywordGroup[];
     } catch (e) {
       console.error("[websearch] Failed to load keyword groups from DB:", e);
     }
   }
-  const local = localStore
-    .select<KeywordGroup>("keyword_groups")
-    .filter((g) => g.enabled)
-    .sort((a, b) => a.priority - b.priority);
-  if (local.length > 0) return local;
+  if (dbGroups.length === 0) {
+    const local = localStore
+      .select<KeywordGroup>("keyword_groups")
+      .filter((g) => g.enabled)
+      .sort((a, b) => a.priority - b.priority);
+    if (local.length > 0) dbGroups = local;
+  }
+  if (dbGroups.length === 0) return defaultGroups;
 
-  console.log("[websearch] Using built-in default keyword groups");
-  return DEFAULT_KEYWORD_GROUPS as unknown as KeywordGroup[];
+  // DB에 없는 default keyword groups 병합
+  const existingNames = new Set(dbGroups.map((g) => g.group_name));
+  const missing = defaultGroups.filter((g) => !existingNames.has(g.group_name));
+  if (missing.length > 0) {
+    console.log(`[websearch] Merging ${missing.length} new default keyword groups`);
+  }
+  return [...dbGroups, ...missing].sort((a, b) => a.priority - b.priority);
 }
 
 async function getWebSearchSources(): Promise<Source[]> {
+  const defaults = DEFAULT_SOURCES.filter(
+    (s) => s.type === "websearch" && s.enabled
+  ) as unknown as Source[];
+
+  let dbSources: Source[] = [];
   if (isSupabaseConfigured()) {
     try {
       const { data } = await supabase
@@ -70,17 +88,26 @@ async function getWebSearchSources(): Promise<Source[]> {
         .select("*")
         .eq("type", "websearch")
         .eq("enabled", true);
-      if (data?.length) return data as Source[];
+      if (data?.length) dbSources = data as Source[];
     } catch (e) {
       console.error("[websearch] Failed to load websearch sources from DB:", e);
     }
   }
-  const local = localStore
-    .select<Source>("sources")
-    .filter((s) => s.type === "websearch" && s.enabled);
-  if (local.length > 0) return local;
+  if (dbSources.length === 0) {
+    const local = localStore
+      .select<Source>("sources")
+      .filter((s) => s.type === "websearch" && s.enabled);
+    if (local.length > 0) dbSources = local;
+  }
+  if (dbSources.length === 0) return defaults;
 
-  return DEFAULT_SOURCES.filter((s) => s.type === "websearch" && s.enabled) as unknown as Source[];
+  // DB에 없는 defaults 병합
+  const existingNames = new Set(dbSources.map((s) => s.name));
+  const missing = defaults.filter((s) => !existingNames.has(s.name));
+  if (missing.length > 0) {
+    console.log(`[websearch] Merging ${missing.length} new default websearch sources`);
+  }
+  return [...dbSources, ...missing];
 }
 
 async function searchByContentType(

@@ -6,6 +6,13 @@ import type { Source, KeywordGroup } from "@/lib/supabase";
 
 export const dynamic = "force-dynamic";
 
+export async function GET() {
+  return NextResponse.json({
+    sources: DEFAULT_SOURCES,
+    keyword_groups: DEFAULT_KEYWORD_GROUPS,
+  });
+}
+
 export async function POST() {
   const results = {
     sources: { added: 0, skipped: 0, errors: [] as string[] },

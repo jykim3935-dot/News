@@ -18,76 +18,7 @@ const CONTENT_TYPE_LABELS: Record<ContentType, string> = {
 
 const SOURCE_TYPES: SourceType[] = ["rss", "api", "websearch", "crawl"];
 
-const PRESET_SOURCES: Omit<Source, "id" | "created_at">[] = [
-  // ──────────── 국내 IT/경제 뉴스 ────────────
-  { name: "전자신문", url: "https://rss.etnews.com/Section901.xml", type: "rss", content_type: "news", category: "tech", description: "IT/과학 - GPU, AI 인프라, 반도체 동향", enabled: true },
-  { name: "ZDNet Korea", url: "https://zdnet.co.kr/rss/newsall.xml", type: "rss", content_type: "news", category: "tech", description: "IT 전문 - 클라우드, AI 인프라, 엔터프라이즈", enabled: true },
-  { name: "디지털타임스", url: "https://www.dt.co.kr/rss/all_news.xml", type: "rss", content_type: "news", category: "tech", description: "디지털 산업 - AI, 반도체, SW", enabled: true },
-  { name: "한국경제", url: "https://www.hankyung.com/feed/it", type: "rss", content_type: "news", category: "market", description: "IT/AI 기업, KOSDAQ, 상장사 동향", enabled: true },
-  { name: "매일경제", url: "https://www.mk.co.kr/rss/30000001/", type: "rss", content_type: "news", category: "market", description: "경제/산업 전반 - 투자, 기업 동향", enabled: true },
-  { name: "AI타임스", url: "https://www.aitimes.com/rss/allArticle.xml", type: "rss", content_type: "news", category: "tech", description: "AI 전문 매체 - 국내 AI 기업/정책", enabled: true },
-  // ──────────── 글로벌 AI/테크 뉴스 ────────────
-  { name: "TechCrunch AI", url: "https://techcrunch.com/category/artificial-intelligence/feed/", type: "rss", content_type: "global", category: "tech", description: "글로벌 AI 스타트업, 투자, 제품", enabled: true },
-  { name: "The Verge AI", url: "https://www.theverge.com/rss/ai-artificial-intelligence/index.xml", type: "rss", content_type: "global", category: "tech", description: "빅테크 AI 전략, 산업 동향", enabled: true },
-  { name: "VentureBeat AI", url: "https://venturebeat.com/category/ai/feed/", type: "rss", content_type: "global", category: "tech", description: "엔터프라이즈 AI, MLOps, 인프라", enabled: true },
-  { name: "The Information", url: "https://www.theinformation.com/feed", type: "rss", content_type: "global", category: "market", description: "빅테크/AI 딥다이브, 독점 취재", enabled: true },
-  { name: "Ars Technica AI", url: "https://feeds.arstechnica.com/arstechnica/technology-lab", type: "rss", content_type: "global", category: "tech", description: "AI/기술 심층 분석", enabled: true },
-  // ──────────── 기술 블로그 ────────────
-  { name: "NVIDIA Blog", url: "https://blogs.nvidia.com/feed/", type: "rss", content_type: "blog", category: "tech", description: "GPU 기술, AI 인프라, CUDA, DGX", enabled: true },
-  { name: "Anthropic Blog", url: "https://www.anthropic.com/blog/rss.xml", type: "rss", content_type: "blog", category: "tech", description: "Claude, AI 안전, MCP 프로토콜", enabled: true },
-  { name: "OpenAI Blog", url: "https://openai.com/blog/rss.xml", type: "rss", content_type: "blog", category: "tech", description: "GPT, AI 에이전트, API 업데이트", enabled: true },
-  { name: "Google AI Blog", url: "https://blog.google/technology/ai/rss/", type: "rss", content_type: "blog", category: "tech", description: "Gemini, TPU, AI 연구 동향", enabled: true },
-  { name: "Hugging Face Blog", url: "https://huggingface.co/blog/feed.xml", type: "rss", content_type: "blog", category: "tech", description: "오픈소스 LLM, 모델 서빙, 추론", enabled: true },
-  // ──────────── 정부/정책 ────────────
-  { name: "과학기술정보통신부", url: "https://www.msit.go.kr/bbs/list.do?sCode=user&mId=113&mPid=112", type: "crawl", content_type: "government", category: "regulation", description: "AI 정책, 디지털뉴딜, GPU 인프라 사업", enabled: true },
-  { name: "산업통상자원부", url: "https://www.motie.go.kr/motie/py/td/defenseIndustry/bbs/bbsList.do?bbs_cd_n=16", type: "crawl", content_type: "government", category: "regulation", description: "AI 산업정책, 수출규제, 반도체", enabled: true },
-  { name: "나라장터 AI공고", url: "https://www.g2b.go.kr", type: "websearch", content_type: "government", category: "customer", description: "공공 AI/GPU 인프라 조달 공고", enabled: true },
-  { name: "IITP", url: "https://www.iitp.kr/kr/1/knowledge/openReference/list.it", type: "crawl", content_type: "report", category: "regulation", description: "AI 기술 동향 보고서, R&D 과제", enabled: true },
-  { name: "NIA 한국지능정보사회진흥원", url: "https://www.nia.or.kr/site/nia_kor/ex/bbs/List.do?cbIdx=25932", type: "crawl", content_type: "report", category: "regulation", description: "AI 윤리, 데이터, 공공AI 가이드", enabled: true },
-  { name: "SPRi 소프트웨어정책연구소", url: "https://spri.kr/posts", type: "crawl", content_type: "report", category: "regulation", description: "SW/AI 산업 분석, 정책 제언", enabled: true },
-  // ──────────── 글로벌 리서치/컨설팅 ────────────
-  { name: "Gartner AI", url: "https://www.gartner.com/en/topics/artificial-intelligence", type: "websearch", content_type: "consulting", category: "market", description: "Magic Quadrant, AI 인프라 시장 전망", enabled: true },
-  { name: "IDC AI", url: "https://www.idc.com/promo/global-ict-spending/artificial-intelligence", type: "websearch", content_type: "consulting", category: "market", description: "AI 인프라 시장 규모, GPU 수요 예측", enabled: true },
-  { name: "McKinsey AI", url: "https://www.mckinsey.com/capabilities/quantumblack/our-insights/rss", type: "rss", content_type: "consulting", category: "market", description: "AI 전략, 디지털 전환, 경영 임팩트", enabled: true },
-  { name: "BCG AI", url: "https://www.bcg.com/publications/rss", type: "rss", content_type: "consulting", category: "market", description: "AI 트랜스포메이션, 기업 전략", enabled: true },
-  { name: "Forrester AI", url: "https://www.forrester.com/blogs/category/artificial-intelligence/feed/", type: "rss", content_type: "consulting", category: "market", description: "AI 벤더 평가, 엔터프라이즈 AI", enabled: true },
-  { name: "a16z AI Blog", url: "https://a16z.com/feed/", type: "rss", content_type: "consulting", category: "investment", description: "AI 인프라 투자 관점, 시장 분석", enabled: true },
-  // ──────────── 학술/논문 ────────────
-  { name: "arXiv cs.AI", url: "https://rss.arxiv.org/rss/cs.AI", type: "rss", content_type: "research", category: "tech", description: "AI 논문 - 에이전트, 추론, 안전", enabled: true },
-  { name: "arXiv cs.DC", url: "https://rss.arxiv.org/rss/cs.DC", type: "rss", content_type: "research", category: "tech", description: "분산컴퓨팅 - GPU 스케줄링, 클러스터", enabled: true },
-  { name: "arXiv cs.LG", url: "https://rss.arxiv.org/rss/cs.LG", type: "rss", content_type: "research", category: "tech", description: "머신러닝 - LLM, 학습 최적화", enabled: true },
-  { name: "Papers With Code", url: "https://paperswithcode.com/latest", type: "websearch", content_type: "research", category: "tech", description: "SOTA 논문 + 구현 코드, 벤치마크", enabled: true },
-  { name: "Semantic Scholar AI", url: "https://www.semanticscholar.org/search?q=GPU+orchestration+AI+infrastructure", type: "websearch", content_type: "research", category: "tech", description: "GPU 오케스트레이션/AI인프라 논문 검색", enabled: true },
-  // ──────────── 경쟁사 모니터링 ────────────
-  { name: "제논(GenOn)", url: "https://www.google.com/search?q=제논+마인즈앤컴퍼니+AI+GPU", type: "websearch", content_type: "news", category: "competitive", description: "주요 경쟁사 제논 뉴스/수주", enabled: true },
-  { name: "CoreWeave", url: "https://www.google.com/search?q=CoreWeave+GPU+cloud", type: "websearch", content_type: "global", category: "competitive", description: "GPU 클라우드 경쟁사 - IPO, 시장점유", enabled: true },
-  { name: "Lambda Labs", url: "https://www.google.com/search?q=Lambda+Labs+GPU+cloud+AI", type: "websearch", content_type: "global", category: "competitive", description: "GPU 클라우드 경쟁사 - 가격, 서비스", enabled: true },
-  { name: "Together AI", url: "https://www.together.ai/blog", type: "websearch", content_type: "global", category: "competitive", description: "AI 추론 플랫폼 경쟁사", enabled: true },
-  // ──────────── 파트너사 ────────────
-  { name: "KT AI/클라우드", url: "https://www.google.com/search?q=KT+AI+클라우드+GPU+인프라", type: "websearch", content_type: "news", category: "competitive", description: "파트너 KT의 AI/클라우드 전략", enabled: true },
-  { name: "삼성SDS AI", url: "https://www.google.com/search?q=삼성SDS+AI+클라우드+Brity", type: "websearch", content_type: "news", category: "competitive", description: "파트너 삼성SDS AI 서비스 동향", enabled: true },
-  // ──────────── 투자/IR ────────────
-  { name: "KOSDAQ AI 종목", url: "https://www.google.com/search?q=KOSDAQ+AI+인프라+GPU+주가", type: "websearch", content_type: "investment", category: "investment", description: "KOSDAQ AI 섹터, 밸류에이션", enabled: true },
-  { name: "AI 인프라 투자", url: "https://www.google.com/search?q=AI+infrastructure+investment+funding+M%26A", type: "websearch", content_type: "investment", category: "investment", description: "글로벌 AI 인프라 VC/PE, M&A", enabled: true },
-  { name: "CB Insights AI", url: "https://www.cbinsights.com/research/artificial-intelligence/", type: "websearch", content_type: "investment", category: "investment", description: "AI 스타트업 투자 트렌드, 유니콘", enabled: true },
-  // ──────────── 헬스케어 AI (NADIA) ────────────
-  { name: "의료AI 뉴스", url: "https://www.google.com/search?q=의료AI+피부질환+AI진단+디지털헬스", type: "websearch", content_type: "news", category: "market", description: "NADIA 관련 의료AI, 피부질환 AI", enabled: true },
-  { name: "FDA AI/ML", url: "https://www.google.com/search?q=FDA+AI+ML+SaMD+approved+devices", type: "websearch", content_type: "global", category: "regulation", description: "FDA AI 의료기기 승인 동향", enabled: true },
-  // ──────────── 한국 국책연구기관 ────────────
-  { name: "KDI (한국개발연구원)", url: "KDI 한국개발연구원 AI 경제 산업 분석", type: "websearch", content_type: "report", category: "market", description: "경제전망·산업분석·정책평가", enabled: true },
-  { name: "KIET (산업연구원)", url: "KIET 산업연구원 AI 제조업 산업 동향", type: "websearch", content_type: "report", category: "market", description: "산업 AI 확산·제조업 AI", enabled: true },
-  { name: "ETRI (전자통신연구원)", url: "ETRI 전자통신연구원 AI 기술 동향", type: "websearch", content_type: "research", category: "tech", description: "AI·ICT 핵심 기술 R&D", enabled: true },
-  { name: "SPRi (SW정책연구소)", url: "SPRi 소프트웨어정책연구소 AI 동향", type: "websearch", content_type: "report", category: "market", description: "AI·SW 산업 동향·정책", enabled: true },
-  { name: "KISDI (정보통신정책연구원)", url: "KISDI 정보통신정책연구원 디지털 AI 정책", type: "websearch", content_type: "report", category: "regulation", description: "디지털 정책·AI 규제 연구", enabled: true },
-  { name: "KISA (한국인터넷진흥원)", url: "KISA 한국인터넷진흥원 AI 보안 동향", type: "websearch", content_type: "report", category: "regulation", description: "AI 보안·개인정보보호", enabled: true },
-  // ──────────── 미국/글로벌 리서치 ────────────
-  { name: "RAND Corporation", url: "RAND Corporation AI policy defense technology research", type: "websearch", content_type: "global", category: "regulation", description: "AI 정책·국방기술 리서치", enabled: true },
-  { name: "Brookings Institution", url: "Brookings Institution AI technology policy analysis", type: "websearch", content_type: "global", category: "regulation", description: "AI 정책 분석·거버넌스", enabled: true },
-  { name: "CSIS Technology", url: "CSIS Center for Strategic International Studies AI technology", type: "websearch", content_type: "global", category: "regulation", description: "전략·국제관계 AI 분석", enabled: true },
-  { name: "Stanford HAI", url: "Stanford HAI Human-Centered AI latest research", type: "websearch", content_type: "research", category: "tech", description: "AI Index·인간중심 AI 연구", enabled: true },
-  { name: "Allen Institute for AI", url: "Allen Institute AI AI2 research blog", type: "websearch", content_type: "research", category: "tech", description: "AI 기초연구·오픈소스 AI", enabled: true },
-  { name: "OECD AI Policy", url: "OECD AI policy observatory latest", type: "websearch", content_type: "global", category: "regulation", description: "AI 정책 국제비교·규제 동향", enabled: true },
-];
+type PresetSource = Omit<Source, "id" | "created_at">;
 
 export default function SourcesManager() {
   const [sources, setSources] = useState<Source[]>([]);
@@ -96,6 +27,8 @@ export default function SourcesManager() {
   const [editId, setEditId] = useState<string | null>(null);
   const [showPresets, setShowPresets] = useState(false);
   const [addingPresets, setAddingPresets] = useState(false);
+  const [presets, setPresets] = useState<PresetSource[]>([]);
+  const [presetsLoading, setPresetsLoading] = useState(false);
   const [aiQuery, setAiQuery] = useState("");
   const [aiSuggesting, setAiSuggesting] = useState(false);
   const [aiSuggestions, setAiSuggestions] = useState<{ sources: Omit<Source, "id" | "created_at">[]; explanation: string } | null>(null);
@@ -124,6 +57,21 @@ export default function SourcesManager() {
       console.error("Failed to fetch sources:", err);
     }
     setLoading(false);
+  };
+
+  const fetchPresets = async () => {
+    if (presets.length > 0) return;
+    setPresetsLoading(true);
+    try {
+      const res = await fetch("/api/presets/apply");
+      if (res.ok) {
+        const data = await res.json();
+        setPresets(data.sources || []);
+      }
+    } catch (err) {
+      console.error("Failed to fetch presets:", err);
+    }
+    setPresetsLoading(false);
   };
 
   useEffect(() => { fetchSources(); }, []);
@@ -227,7 +175,7 @@ export default function SourcesManager() {
     }
   };
 
-  const handleAddPreset = async (preset: typeof PRESET_SOURCES[number]) => {
+  const handleAddPreset = async (preset: PresetSource) => {
     const exists = sources.some((s) => s.name === preset.name);
     if (exists) {
       toast(`"${preset.name}" 이미 존재합니다`, "info");
@@ -246,7 +194,7 @@ export default function SourcesManager() {
     setAddingPresets(true);
     let added = 0;
     let failed = 0;
-    for (const preset of PRESET_SOURCES) {
+    for (const preset of presets) {
       const exists = sources.some((s) => s.name === preset.name);
       if (exists) { continue; }
       const ok = await addSingleSource(preset as unknown as Record<string, unknown>);
@@ -270,7 +218,7 @@ export default function SourcesManager() {
         <h3 className="text-lg font-semibold text-gray-900">수집 소스 ({sources.length})</h3>
         <div className="flex gap-2">
           <button
-            onClick={() => setShowPresets(!showPresets)}
+            onClick={() => { const next = !showPresets; setShowPresets(next); if (next) fetchPresets(); }}
             className="px-3 sm:px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-xs sm:text-sm border border-gray-200"
           >
             📋 프리셋
@@ -345,7 +293,8 @@ export default function SourcesManager() {
             </button>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            {PRESET_SOURCES.map((preset) => {
+            {presetsLoading && <p className="text-sm text-blue-600 col-span-2">로딩 중...</p>}
+            {presets.map((preset) => {
               const exists = sources.some((s) => s.name === preset.name);
               return (
                 <div key={preset.name} className="flex items-center justify-between p-2 bg-white rounded border border-blue-100">
