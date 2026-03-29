@@ -1,5 +1,7 @@
 import { Resend } from "resend";
-import { supabase } from "./supabase";
+import { supabase, isSupabaseConfigured } from "./supabase";
+import { localStore } from "./local-store";
+import type { Recipient } from "./supabase";
 
 let _resend: Resend | null = null;
 function getResend() {
@@ -20,10 +22,24 @@ export async function sendNewsletter(
   if (testEmail) {
     emails = [testEmail];
   } else {
-    const { data: recipients } = await supabase
-      .from("recipients")
-      .select("email")
-      .eq("enabled", true);
+    let recipients: { email: string }[] | null = null;
+
+    if (isSupabaseConfigured()) {
+      try {
+        const { data } = await supabase
+          .from("recipients")
+          .select("email")
+          .eq("enabled", true);
+        recipients = data;
+      } catch { /* fall through */ }
+    }
+
+    if (!recipients) {
+      recipients = localStore
+        .select<Recipient>("recipients")
+        .filter((r) => r.enabled)
+        .map((r) => ({ email: r.email }));
+    }
 
     emails = (recipients || []).map((r) => r.email);
   }

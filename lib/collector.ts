@@ -1,8 +1,11 @@
-import { supabase } from "./supabase";
+import { supabase, isSupabaseConfigured } from "./supabase";
+import { localStore } from "./local-store";
 import type { Article } from "./supabase";
 import { collectViaWebSearch } from "./collector-websearch";
 import { collectViaRSS } from "./collector-rss";
 import { collectViaDart } from "./collector-dart";
+import { collectGovPolicy } from "./collector-gov";
+import { collectResearch } from "./collector-research";
 import crypto from "crypto";
 
 function deduplicateArticles(
@@ -23,19 +26,22 @@ function deduplicateArticles(
 export async function collectAll(
   batchId: string
 ): Promise<Partial<Article>[]> {
-  console.log("[collector] Starting collection...");
+  console.log("[collector] Starting collection (5 collectors)...");
 
-  // Run all collectors in parallel
-  const [webArticles, rssArticles, dartArticles] = await Promise.allSettled([
-    collectViaWebSearch(batchId),
-    collectViaRSS(batchId),
-    collectViaDart(batchId),
-  ]).then((results) =>
-    results.map((r) => (r.status === "fulfilled" ? r.value : []))
-  );
+  // Run all 5 collectors in parallel
+  const [webArticles, rssArticles, dartArticles, govArticles, researchArticles] =
+    await Promise.allSettled([
+      collectViaWebSearch(batchId),
+      collectViaRSS(batchId),
+      collectViaDart(batchId),
+      collectGovPolicy(batchId),
+      collectResearch(batchId),
+    ]).then((results) =>
+      results.map((r) => (r.status === "fulfilled" ? r.value : []))
+    );
 
   console.log(
-    `[collector] Web: ${webArticles.length}, RSS: ${rssArticles.length}, DART: ${dartArticles.length}`
+    `[collector] Web: ${webArticles.length}, RSS: ${rssArticles.length}, DART: ${dartArticles.length}, Gov: ${govArticles.length}, Research: ${researchArticles.length}`
   );
 
   // Combine and deduplicate
@@ -43,28 +49,35 @@ export async function collectAll(
     ...webArticles,
     ...rssArticles,
     ...dartArticles,
+    ...govArticles,
+    ...researchArticles,
   ]);
 
   console.log(`[collector] After dedup: ${allArticles.length} articles`);
 
   // Save to database
   if (allArticles.length > 0) {
-    const { error } = await supabase.from("articles").insert(
-      allArticles.map((a) => ({
-        title: a.title,
-        url: a.url,
-        source: a.source,
-        content_type: a.content_type,
-        published_at: a.published_at,
-        summary: a.summary,
-        matched_keywords: a.matched_keywords || [],
-        batch_id: batchId,
-      }))
-    );
+    const records = allArticles.map((a) => ({
+      title: a.title,
+      url: a.url,
+      source: a.source,
+      content_type: a.content_type,
+      published_at: a.published_at,
+      summary: a.summary,
+      matched_keywords: a.matched_keywords || [],
+      batch_id: batchId,
+    }));
 
-    if (error) {
-      console.error("[collector] Error saving articles:", error);
-      throw error;
+    if (isSupabaseConfigured()) {
+      try {
+        const { error } = await supabase.from("articles").insert(records);
+        if (error) throw error;
+      } catch (err) {
+        console.warn("[collector] Supabase insert failed, using local store:", err);
+        localStore.insertMany<Article>("articles", records as Omit<Article, "id" | "created_at">[]);
+      }
+    } else {
+      localStore.insertMany<Article>("articles", records as Omit<Article, "id" | "created_at">[]);
     }
   }
 

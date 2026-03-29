@@ -2,12 +2,22 @@ import { createClient, SupabaseClient } from "@supabase/supabase-js";
 
 let _supabase: SupabaseClient | null = null;
 
+export function isSupabaseConfigured(): boolean {
+  return !!(
+    process.env.SUPABASE_URL &&
+    (process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY)
+  );
+}
+
 export function getSupabase(): SupabaseClient {
+  if (!isSupabaseConfigured()) {
+    throw new Error("Supabase is not configured");
+  }
   if (!_supabase) {
-    _supabase = createClient(
-      process.env.SUPABASE_URL!,
-      process.env.SUPABASE_ANON_KEY!
-    );
+    // Prefer service_role key (bypasses RLS, needed for server-side writes)
+    const key =
+      process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY!;
+    _supabase = createClient(process.env.SUPABASE_URL!, key);
   }
   return _supabase;
 }
@@ -27,6 +37,8 @@ export const CONTENT_TYPES = [
   "global",
   "investment",
   "blog",
+  "government",
+  "research",
 ] as const;
 export type ContentType = (typeof CONTENT_TYPES)[number];
 
@@ -84,8 +96,16 @@ export interface Article {
   relevance_score: number | null;
   urgency: Urgency | null;
   impact_comment: string | null;
+  deep_summary: string | null;
+  source_description: string | null;
+  key_findings: string[];
+  action_items: string[];
   batch_id: string | null;
   created_at: string;
+  // Translation & dedup
+  title_ko: string | null;
+  summary_ko: string | null;
+  dedup_group: string | null;
 }
 
 export interface Recipient {
@@ -105,5 +125,18 @@ export interface PipelineRun {
   completed_at: string | null;
   articles_count: number;
   error: string | null;
+  executive_brief: string | null;
+  trend_summary: string | null;
+  created_at: string;
+}
+
+export interface Trend {
+  id: string;
+  batch_id: string | null;
+  trend_title: string;
+  trend_description: string;
+  related_article_ids: string[];
+  category: string | null;
+  strength: "rising" | "stable" | "emerging";
   created_at: string;
 }

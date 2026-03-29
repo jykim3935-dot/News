@@ -1,6 +1,8 @@
 import RssParser from "rss-parser";
-import { supabase } from "./supabase";
-import type { Article, Source } from "./supabase";
+import { supabase, isSupabaseConfigured } from "./supabase";
+import { localStore } from "./local-store";
+import { DEFAULT_SOURCES, DEFAULT_KEYWORD_GROUPS } from "./default-presets";
+import type { Article, Source, KeywordGroup } from "./supabase";
 
 const parser = new RssParser({
   timeout: 10000,
@@ -8,6 +10,48 @@ const parser = new RssParser({
     "User-Agent": "ACRYL-Intel/1.0",
   },
 });
+
+async function getEnabledRssSources(): Promise<Source[]> {
+  if (isSupabaseConfigured()) {
+    try {
+      const { data } = await supabase
+        .from("sources")
+        .select("*")
+        .eq("type", "rss")
+        .eq("enabled", true);
+      if (data?.length) return data as Source[];
+    } catch { /* fall through */ }
+  }
+  const local = localStore
+    .select<Source>("sources")
+    .filter((s) => s.type === "rss" && s.enabled);
+  if (local.length > 0) return local;
+
+  // Fallback to built-in defaults
+  console.log("[rss] Using built-in default RSS sources");
+  return DEFAULT_SOURCES.filter((s) => s.type === "rss" && s.enabled) as unknown as Source[];
+}
+
+async function getEnabledKeywords(): Promise<string[]> {
+  if (isSupabaseConfigured()) {
+    try {
+      const { data } = await supabase
+        .from("keyword_groups")
+        .select("*")
+        .eq("enabled", true);
+      if (data?.length) return (data as KeywordGroup[]).flatMap((g) => g.keywords);
+    } catch { /* fall through */ }
+  }
+  const local = localStore
+    .select<KeywordGroup>("keyword_groups")
+    .filter((g) => g.enabled)
+    .flatMap((g) => g.keywords);
+  if (local.length > 0) return local;
+
+  // Fallback to built-in defaults
+  console.log("[rss] Using built-in default keywords");
+  return DEFAULT_KEYWORD_GROUPS.flatMap((g) => g.keywords);
+}
 
 async function fetchRssFeed(
   source: Source,
@@ -17,8 +61,16 @@ async function fetchRssFeed(
     const feed = await parser.parseURL(source.url);
     const articles: Partial<Article>[] = [];
     const lowerKeywords = keywords.map((k) => k.toLowerCase());
+    // Only accept articles from the last 7 days
+    const cutoff = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
 
-    for (const item of feed.items.slice(0, 20)) {
+    for (const item of feed.items.slice(0, 30)) {
+      // Date filter
+      if (item.isoDate) {
+        const pubDate = new Date(item.isoDate);
+        if (pubDate < cutoff) continue;
+      }
+
       const title = item.title || "";
       const content = item.contentSnippet || item.content || "";
       const text = `${title} ${content}`.toLowerCase();
@@ -50,11 +102,7 @@ export async function collectViaRSS(
   batchId: string
 ): Promise<Partial<Article>[]> {
   // Get enabled RSS sources
-  const { data: sources } = await supabase
-    .from("sources")
-    .select("*")
-    .eq("type", "rss")
-    .eq("enabled", true);
+  const sources = await getEnabledRssSources();
 
   if (!sources?.length) {
     console.log("[rss] No RSS sources found");
@@ -62,13 +110,11 @@ export async function collectViaRSS(
   }
 
   // Get all enabled keywords
-  const { data: keywordGroups } = await supabase
-    .from("keyword_groups")
-    .select("*")
-    .eq("enabled", true);
-
-  const allKeywords = (keywordGroups || []).flatMap((g) => g.keywords);
-  if (allKeywords.length === 0) return [];
+  const allKeywords = await getEnabledKeywords();
+  if (allKeywords.length === 0) {
+    console.log("[rss] No keywords found");
+    return [];
+  }
 
   const allArticles: Partial<Article>[] = [];
 

@@ -1,7 +1,9 @@
 import Anthropic from "@anthropic-ai/sdk";
-import { WEB_SEARCH_PROMPTS } from "./prompts";
-import type { ContentType, Article } from "./supabase";
-import { CONTENT_TYPES, supabase } from "./supabase";
+import { WEB_SEARCH_PROMPTS, KEYWORD_EXPANSION_PROMPT } from "./prompts";
+import type { ContentType, Article, KeywordGroup } from "./supabase";
+import { CONTENT_TYPES, supabase, isSupabaseConfigured } from "./supabase";
+import { localStore } from "./local-store";
+import { DEFAULT_KEYWORD_GROUPS } from "./default-presets";
 
 const anthropic = new Anthropic();
 
@@ -18,10 +20,59 @@ function extractJSON(text: string): string {
   return match ? match[0] : "{}";
 }
 
+async function getEnabledKeywordGroups(): Promise<KeywordGroup[]> {
+  if (isSupabaseConfigured()) {
+    try {
+      const { data } = await supabase
+        .from("keyword_groups")
+        .select("*")
+        .eq("enabled", true)
+        .order("priority", { ascending: true });
+      if (data?.length) return data as KeywordGroup[];
+    } catch { /* fall through */ }
+  }
+  const local = localStore
+    .select<KeywordGroup>("keyword_groups")
+    .filter((g) => g.enabled)
+    .sort((a, b) => a.priority - b.priority);
+  if (local.length > 0) return local;
+
+  // Fallback to built-in defaults
+  console.log("[websearch] Using built-in default keyword groups");
+  return DEFAULT_KEYWORD_GROUPS as unknown as KeywordGroup[];
+}
+
+async function expandKeywords(keywords: string[]): Promise<string[]> {
+  try {
+    const response = await anthropic.messages.create({
+      model: "claude-sonnet-4-20250514",
+      max_tokens: 1024,
+      messages: [
+        {
+          role: "user",
+          content: `${KEYWORD_EXPANSION_PROMPT} ${keywords.join(", ")}`,
+        },
+      ],
+    });
+
+    const textBlock = response.content.find((b) => b.type === "text");
+    if (!textBlock || textBlock.type !== "text") return [];
+
+    const parsed = JSON.parse(extractJSON(textBlock.text));
+    return parsed.expanded_keywords || [];
+  } catch (error) {
+    console.error("[websearch] Keyword expansion error:", error);
+    return [];
+  }
+}
+
 async function searchByContentType(
   contentType: ContentType,
   keywords: string[]
 ): Promise<Partial<Article>[]> {
+  // Skip government and research — handled by dedicated collectors
+  if (contentType === "government" || contentType === "research") return [];
+
   const prompt = WEB_SEARCH_PROMPTS[contentType];
   const keywordStr = keywords.join(", ");
 
@@ -29,7 +80,7 @@ async function searchByContentType(
     const webSearchTool = {
       type: "web_search_20250305" as const,
       name: "web_search" as const,
-      max_uses: 10,
+      max_uses: 20,
     };
     const response = await anthropic.messages.create({
       model: "claude-sonnet-4-20250514",
@@ -68,12 +119,8 @@ async function searchByContentType(
 export async function collectViaWebSearch(
   batchId: string
 ): Promise<Partial<Article>[]> {
-  // Get enabled keyword groups from DB
-  const { data: keywordGroups } = await supabase
-    .from("keyword_groups")
-    .select("*")
-    .eq("enabled", true)
-    .order("priority", { ascending: true });
+  // Get enabled keyword groups from DB or local store
+  const keywordGroups = await getEnabledKeywordGroups();
 
   if (!keywordGroups?.length) {
     console.log("[websearch] No keyword groups found");
@@ -84,6 +131,9 @@ export async function collectViaWebSearch(
 
   // For each content type, gather relevant keywords and search
   for (const ct of CONTENT_TYPES) {
+    // Skip government/research — dedicated collectors handle these
+    if (ct === "government" || ct === "research") continue;
+
     const relevantGroups = keywordGroups.filter(
       (g) =>
         g.content_types.length === 0 || g.content_types.includes(ct)
@@ -96,13 +146,27 @@ export async function collectViaWebSearch(
       .flatMap((g) => g.keywords)
       .slice(0, 10);
 
-    const articles = await searchByContentType(ct, keywords);
+    // Round 1: Search with original keywords
+    const round1 = await searchByContentType(ct, keywords);
     allArticles.push(
-      ...articles.map((a) => ({ ...a, batch_id: batchId }))
+      ...round1.map((a) => ({ ...a, batch_id: batchId }))
     );
 
-    // Rate limit: 1-2s between API calls
+    // Rate limit
     await new Promise((r) => setTimeout(r, 1500));
+
+    // Round 2: Expand keywords and search again (for high-priority types)
+    if (["news", "report", "consulting"].includes(ct)) {
+      const expanded = await expandKeywords(keywords.slice(0, 5));
+      if (expanded.length > 0) {
+        await new Promise((r) => setTimeout(r, 1000));
+        const round2 = await searchByContentType(ct, expanded);
+        allArticles.push(
+          ...round2.map((a) => ({ ...a, batch_id: batchId }))
+        );
+      }
+      await new Promise((r) => setTimeout(r, 1500));
+    }
   }
 
   return allArticles;

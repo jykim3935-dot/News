@@ -40,7 +40,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   return (
     <ToastContext.Provider value={{ toast }}>
       {children}
-      <div className="fixed bottom-4 right-4 z-50 flex flex-col gap-2">
+      <div className="fixed bottom-4 right-4 z-50 flex flex-col gap-2 max-w-[calc(100vw-2rem)]">
         {messages.map((msg) => (
           <ToastItem key={msg.id} msg={msg} onDismiss={dismiss} />
         ))}
@@ -63,10 +63,10 @@ function ToastItem({
 
   const bgColor =
     msg.type === "success"
-      ? "bg-green-600/90"
+      ? "bg-green-600"
       : msg.type === "error"
-        ? "bg-red-600/90"
-        : "bg-blue-600/90";
+        ? "bg-red-600"
+        : "bg-blue-600";
 
   return (
     <div

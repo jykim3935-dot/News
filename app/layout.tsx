@@ -13,8 +13,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="ko" className="dark">
-      <body className="min-h-screen bg-[#0F172A] text-[#E2E8F0] antialiased">
+    <html lang="ko">
+      <body className="min-h-screen bg-white text-gray-800 antialiased">
         <ToastProvider>{children}</ToastProvider>
       </body>
     </html>
