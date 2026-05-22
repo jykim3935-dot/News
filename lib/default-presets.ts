@@ -173,7 +173,7 @@ export const DEFAULT_KEYWORD_GROUPS: PresetKeywordGroup[] = [
     category: "competitive" as Category,
     content_types: ["news", "report", "investment"] as ContentType[],
     priority: 1,
-    keywords: ["제논", "GenOn", "마인즈앤컴퍼니", "CoreWeave", "Lambda Labs", "Together AI", "RunPod", "Vast.ai", "GPU 클라우드 경쟁", "Crusoe Energy", "Nebius"],
+    keywords: ["제논", "GenOn", "마인즈앤컴퍼니", "CoreWeave", "Lambda Labs", "Together AI", "RunPod", "Vast.ai", "GPU 클라우드 경쟁", "Crusoe Energy", "Nebius", "베슬AI", "Vessl AI", "메이머스트", "Maymurst", "퓨리오사AI", "FuriosaAI", "대원CTS"],
     enabled: true,
   },
   {

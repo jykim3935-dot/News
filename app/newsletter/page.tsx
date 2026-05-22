@@ -124,7 +124,7 @@ export default async function NewsletterPage() {
     weekday: "long",
   });
 
-  const html = renderNewsletter({ articles, date, executiveBrief, trends });
+  const html = renderNewsletter({ articles, date, executiveBrief, trends }, { fragment: true });
 
   return (
     <>

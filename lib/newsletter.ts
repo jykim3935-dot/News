@@ -188,7 +188,10 @@ export interface NewsletterData {
   trends?: Trend[];
 }
 
-export function renderNewsletter(data: NewsletterData): string {
+export function renderNewsletter(
+  data: NewsletterData,
+  options?: { fragment?: boolean },
+): string {
   const { articles, date, executiveBrief, trends } = data;
 
   const total = articles.length;
@@ -204,10 +207,7 @@ export function renderNewsletter(data: NewsletterData): string {
   const yellowArticles = articles.filter((a) => a.urgency === "yellow");
   const greenArticles = articles.filter((a) => a.urgency !== "red" && a.urgency !== "yellow");
 
-  return `<!DOCTYPE html>
-<html lang="ko">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
-<body style="margin:0;padding:0;background:#f4f4f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;color:#18181b;font-size:13px;line-height:1.5;">
+  const inner = `
   <div style="max-width:700px;margin:0 auto;background:#ffffff;">
 
     <div style="padding:16px 24px;border-bottom:2px solid #18181b;">
@@ -238,7 +238,15 @@ export function renderNewsletter(data: NewsletterData): string {
       <span style="font-size:10px;color:#a1a1aa;">ACRYL Intelligence Brief &middot; Powered by Claude AI &middot; 본 브리프는 AI 자동 분석 결과이며 투자 조언이 아닙니다</span>
     </div>
 
-  </div>
+  </div>`;
+
+  if (options?.fragment) return inner;
+
+  return `<!DOCTYPE html>
+<html lang="ko">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
+<body style="margin:0;padding:0;background:#f4f4f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;color:#18181b;font-size:13px;line-height:1.5;">
+${inner}
 </body>
 </html>`;
 }

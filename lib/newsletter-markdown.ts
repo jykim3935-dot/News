@@ -120,22 +120,18 @@ export function renderNewsletterMarkdown(data: NewsletterData): string {
 
   const sections: string[] = [];
 
-  // Header
   sections.push(`# ACRYL INTELLIGENCE BRIEF`);
   sections.push(`> ${date}\n`);
 
-  // Stats
   sections.push(
     `**${total}건 수집** · 긴급 ${redCount} · 주의 ${yellowCount} · 참고 ${greenCount} · 관련도 ${avgScore}/10 · 심층분석 ${deepCount}건\n`,
   );
 
   sections.push("---\n");
 
-  // Brief
   const briefMd = renderBriefMd(executiveBrief || "");
   if (briefMd) sections.push(briefMd, "---\n");
 
-  // Urgency groups
   const redMd = renderGroupMd("🔴", "긴급", redArticles);
   const yellowMd = renderGroupMd("🟡", "주의", yellowArticles);
   const greenMd = renderGroupMd("🟢", "참고", greenArticles);
@@ -143,11 +139,9 @@ export function renderNewsletterMarkdown(data: NewsletterData): string {
   if (yellowMd) sections.push(yellowMd);
   if (greenMd) sections.push(greenMd);
 
-  // Trends
   const trendsMd = renderTrendsMd(trends || []);
   if (trendsMd) sections.push("---\n", trendsMd);
 
-  // Footer
   sections.push(
     "---\n",
     "*ACRYL Intelligence Brief · Powered by Claude AI · 본 브리프는 AI 자동 분석 결과이며 투자 조언이 아닙니다*\n",

@@ -13,7 +13,6 @@ export async function GET() {
   let articles: Article[] = [];
   let trends: Trend[] = [];
 
-  // Supabase first
   if (isSupabaseConfigured()) {
     try {
       const { data } = await supabase
@@ -40,7 +39,6 @@ export async function GET() {
     } catch { /* fall through */ }
   }
 
-  // Fallback: local store
   if (!run) {
     const runs = localStore
       .select<PipelineRun>("pipeline_runs")
@@ -69,7 +67,6 @@ export async function GET() {
     );
   }
 
-  // Generate brief if missing
   let executiveBrief = run.executive_brief || "";
   if (!executiveBrief && articles.length > 0) {
     try {
