@@ -11,7 +11,7 @@ function urgencyColor(u: string | null): string {
   }
 }
 
-function categoryLabel(c: string | null): string {
+export function categoryLabel(c: string | null): string {
   const m: Record<string, string> = {
     competitive: "경쟁", market: "시장", regulation: "규제",
     tech: "기술", customer: "고객", investment: "투자",
@@ -19,7 +19,7 @@ function categoryLabel(c: string | null): string {
   return c ? m[c] || c : "";
 }
 
-function contentTypeLabel(ct: string | null): string {
+export function contentTypeLabel(ct: string | null): string {
   const m: Record<string, string> = {
     news: "뉴스", report: "보고서", research: "학술",
     consulting: "컨설팅", government: "정부", global: "글로벌",
@@ -28,11 +28,11 @@ function contentTypeLabel(ct: string | null): string {
   return ct ? m[ct] || ct : "";
 }
 
-function displayTitle(a: Article): string {
+export function displayTitle(a: Article): string {
   return a.title_ko || a.title;
 }
 
-function displaySummary(a: Article): string {
+export function displaySummary(a: Article): string {
   return a.summary_ko || a.summary || "";
 }
 
@@ -188,7 +188,10 @@ export interface NewsletterData {
   trends?: Trend[];
 }
 
-export function renderNewsletter(data: NewsletterData): string {
+export function renderNewsletter(
+  data: NewsletterData,
+  options?: { fragment?: boolean },
+): string {
   const { articles, date, executiveBrief, trends } = data;
 
   const total = articles.length;
@@ -204,10 +207,7 @@ export function renderNewsletter(data: NewsletterData): string {
   const yellowArticles = articles.filter((a) => a.urgency === "yellow");
   const greenArticles = articles.filter((a) => a.urgency !== "red" && a.urgency !== "yellow");
 
-  return `<!DOCTYPE html>
-<html lang="ko">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
-<body style="margin:0;padding:0;background:#f4f4f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;color:#18181b;font-size:13px;line-height:1.5;">
+  const inner = `
   <div style="max-width:700px;margin:0 auto;background:#ffffff;">
 
     <div style="padding:16px 24px;border-bottom:2px solid #18181b;">
@@ -238,7 +238,15 @@ export function renderNewsletter(data: NewsletterData): string {
       <span style="font-size:10px;color:#a1a1aa;">ACRYL Intelligence Brief &middot; Powered by Claude AI &middot; 본 브리프는 AI 자동 분석 결과이며 투자 조언이 아닙니다</span>
     </div>
 
-  </div>
+  </div>`;
+
+  if (options?.fragment) return inner;
+
+  return `<!DOCTYPE html>
+<html lang="ko">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
+<body style="margin:0;padding:0;background:#f4f4f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;color:#18181b;font-size:13px;line-height:1.5;">
+${inner}
 </body>
 </html>`;
 }

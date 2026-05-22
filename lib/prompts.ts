@@ -7,7 +7,7 @@ export const ACRYL_CONTEXT = `ACRYL Inc.(주식회사 아크릴)
   - AGENTBASE: AI 에이전트 오케스트레이션 (MCP 네이티브 지원)
   - FLIGHTBASE: MLOps 플랫폼
 - 헬스케어 AI: NADIA (피부질환 AI 진단, 해외진출 추진 중)
-- 주요 경쟁사: 제논(GenOn, 구 마인즈앤컴퍼니)
+- 주요 경쟁사: 제논(GenOn), 베슬AI(Vessl AI), 퓨리오사AI(FuriosaAI), 메이머스트(Maymurst), 대원CTS
 - 주요 파트너: KT, 삼성SDS, 메가존클라우드
 - 주요 고객: 공공기관(강원랜드, KODATA, 한국가스기술공사), 대형병원(아산병원), 금융권
 - 투자 관점: KOSDAQ AI 인프라 섹터, GPU 오케스트레이션 카테고리 리더
