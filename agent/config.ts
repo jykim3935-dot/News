@@ -13,21 +13,37 @@ export interface KeywordConfig {
 }
 
 export const KEYWORDS: KeywordConfig[] = [
-  // 산업 트렌드 / 기술 키워드 (폭넓게)
-  { query: "반도체 HBM" },
+  // ── 기술 (모델·반도체·아키텍처) ──
+  { query: "반도체 HBM4" },
   { query: "AI 반도체 NPU" },
-  { query: "생성형 AI" },
-  { query: "AI 에이전트" },
-  { query: "GPU 클라우드 데이터센터" },
-  { query: "AI 데이터센터 전력" },
+  { query: "생성형 AI 모델" },
+  { query: "AI 에이전트 기술" },
   { query: "LLM 거대언어모델" },
   { query: "온디바이스 AI 경량화" },
+  { query: "추론 최적화 AI 칩" },
+  { query: "멀티모달 AI" },
 
-  // 투자 동향
+  // ── 제품 (출시·런칭) ──
+  { query: "AI 신제품 출시" },
+  { query: "AI 모델 공개 오픈소스" },
+  { query: "AI 플랫폼 런칭" },
+
+  // ── 산업트렌드 ──
+  { query: "GPU 클라우드 데이터센터" },
+  { query: "AI 데이터센터 전력" },
+  { query: "소버린 AI 파운데이션 모델" },
+  { query: "엔터프라이즈 AI 도입" },
+
+  // ── 투자 ──
   { query: "AI 스타트업 투자 유치" },
   { query: "AI 기업 IPO 상장" },
+  { query: "AI 스타트업 시리즈 투자" },
 
-  // 경쟁사 / 관심 기업 (Notion "언급기업" 옵션과 매핑)
+  // ── 행사정보 ──
+  { query: "AI 컨퍼런스 전시회" },
+  { query: "AI 박람회 행사 개최" },
+
+  // ── 경쟁사 / 관심 기업 (Notion "언급기업" 옵션과 매핑) ──
   { query: "노타 AI", company: "노타" },
   { query: "래블업", company: "래블업" },
   { query: "마키나락스", company: "마키나락스" },
@@ -36,15 +52,19 @@ export const KEYWORDS: KeywordConfig[] = [
   { query: "사이오닉AI", company: "사이오닉AI" },
   { query: "리벨리온 NPU", company: "리벨리온" },
   { query: "퓨리오사AI", company: "퓨리오사AI" },
+  { query: "딥엑스 NPU", company: "딥엑스" },
+  { query: "모레 GPU", company: "모레" },
 ];
 
 // 해외 기사 수집용 영문 검색어 (Claude web_search 수집기에서 사용)
 export const GLOBAL_QUERIES: string[] = [
-  "AI semiconductor HBM Nvidia latest news",
+  "AI semiconductor HBM Nvidia GPU latest news",
   "GPU cloud neocloud CoreWeave Lambda latest",
   "frontier AI model release OpenAI Anthropic Google latest",
-  "enterprise AI agent startup funding round latest",
+  "enterprise AI agent product launch latest",
+  "AI startup funding round IPO latest",
   "AI data center power investment latest",
+  "AI conference event GTC keynote latest",
 ];
 
 // 키워드당 네이버에서 가져올 기사 수 (최대 100)
@@ -91,16 +111,18 @@ export const DOMAIN_TO_MEDIA: Record<string, string> = {
 // Notion "중요도" 옵션
 export const IMPORTANCE_OPTIONS = ["★★★", "★★☆", "★☆☆"] as const;
 
-// Notion "카테고리" 멀티셀렉트 옵션 (경쟁사·산업트렌드·기술지식·투자 중심)
+// Notion "카테고리" 멀티셀렉트 옵션 (경쟁사·투자·기술·제품·행사정보 중심)
 export const CATEGORY_OPTIONS = [
   "자사",
   "경쟁사",
-  "산업트렌드",
-  "기술지식",
   "투자",
+  "기술",
+  "제품",
+  "행사정보",
+  "산업트렌드",
   "정책규제",
-  "효율화기술",
   "논문/오픈소스",
+  "효율화기술",
   "기타산업",
 ] as const;
 
