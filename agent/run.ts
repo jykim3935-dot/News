@@ -6,15 +6,32 @@
  * 실행: npm run clip
  */
 import { collectNaver } from "./naver";
+import { collectGlobal } from "./global";
 import { analyzeArticles } from "./analyze";
 import { saveToNotion } from "./notion";
+import type { RawArticle } from "./types";
 
 async function main() {
   const startedAt = Date.now();
   console.log("=== 뉴스 클리핑 에이전트 시작 ===");
 
-  // 1. 수집
-  const raw = await collectNaver();
+  // 1. 수집 (국내 네이버 + 해외 web_search, 병렬)
+  const [naverRes, globalRes] = await Promise.allSettled([
+    collectNaver(),
+    collectGlobal(),
+  ]);
+  const naver = naverRes.status === "fulfilled" ? naverRes.value : [];
+  const global = globalRes.status === "fulfilled" ? globalRes.value : [];
+
+  // URL 기준 통합 중복 제거
+  const seen = new Set<string>();
+  const raw: RawArticle[] = [...naver, ...global].filter((a) => {
+    if (seen.has(a.url)) return false;
+    seen.add(a.url);
+    return true;
+  });
+  console.log(`[collect] 국내 ${naver.length} + 해외 ${global.length} → 통합 ${raw.length}건`);
+
   if (raw.length === 0) {
     console.log("수집된 기사가 없습니다. 종료합니다.");
     return;

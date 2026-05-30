@@ -1,29 +1,47 @@
 # 뉴스 클리핑 에이전트
 
-네이버 뉴스를 수집해 Claude로 요약·분류한 뒤, Notion **"일일 뉴스클리핑"** 데이터베이스에 자동 저장하는 가벼운 에이전트입니다.
+국내(네이버)·해외(웹검색) 뉴스를 수집해 Claude로 요약·분류한 뒤, Notion **"일일 뉴스클리핑"** 데이터베이스에 자동 저장하는 가벼운 에이전트입니다.
 
 ```
-네이버 뉴스 검색 API  →  Claude 분석(요약·시사점·중요도·분류)  →  Notion 저장(중복 제거)
+네이버 뉴스 API  ┐
+                 ├→  Claude 분석(요약·시사점·중요도·분류)  →  Notion 저장(중복 제거)
+Claude web_search ┘  (국내 + 해외 통합)
 ```
 
 ## 구성
 
 | 파일 | 역할 |
 |------|------|
-| `config.ts` | 수집 키워드, Notion 옵션 매핑, 모델 등 모든 설정 |
-| `naver.ts` | 네이버 뉴스 검색 API 수집 + URL 중복 제거 |
+| `config.ts` | 수집 키워드(국내/해외), Notion 옵션 매핑, 모델 등 모든 설정 |
+| `naver.ts` | 네이버 뉴스 검색 API 수집(국내) + URL 중복 제거 |
+| `global.ts` | Claude web_search 기반 해외 기사 수집 (영문 검색어) |
 | `analyze.ts` | Claude로 관련성 판단·핵심요약·시사점·중요도·카테고리·언급기업 추출 |
 | `notion.ts` | Notion DB에 기록 (원문 URL 기준 중복 방지) |
-| `run.ts` | 전체 파이프라인 실행 진입점 |
+| `run.ts` | 전체 파이프라인 실행 진입점 (국내+해외 병렬 수집) |
 
 ## 수집 키워드
 
-`config.ts`의 `KEYWORDS`에서 관리합니다. 현재 설정:
+`config.ts`의 `KEYWORDS`(국내)·`GLOBAL_QUERIES`(해외)에서 관리합니다. 현재 설정:
 
-- **산업/기술**: 반도체, 생성형 AI, AI 스타트업 투자
-- **관심 기업**: 노타, 래블업, 마키나락스, 베슬AI, 업스테이지, 사이오닉AI
+- **산업트렌드/기술**: 반도체 HBM, AI 반도체 NPU, 생성형 AI, AI 에이전트, GPU 클라우드·데이터센터, LLM, 온디바이스 AI
+- **투자**: AI 스타트업 투자 유치, AI 기업 IPO
+- **경쟁사/관심 기업**: 노타, 래블업, 마키나락스, 베슬AI, 업스테이지, 사이오닉AI, 리벨리온, 퓨리오사AI
+- **해외**: 반도체/HBM, GPU 클라우드(CoreWeave·Lambda), 프론티어 모델(OpenAI·Anthropic·Google), 엔터프라이즈 에이전트 펀딩, 데이터센터·전력
 
 기업 키워드는 매칭 시 Notion `언급기업` 속성에 자동 태깅됩니다.
+
+## 분류 체계 (카테고리)
+
+기사는 다음 4개 핵심 분류로 정리됩니다 (+보조 분류):
+
+| 카테고리 | 의미 |
+|---|---|
+| **경쟁사** | 동종 AI 인프라/모델/반도체 경쟁사의 제품·수주·동향 |
+| **산업트렌드** | 시장 규모·구조 변화, 빅테크 동향, 데이터센터·전력 등 거시 흐름 |
+| **기술지식** | 모델·추론 최적화, 반도체·NPU 기술, 신규 모델/아키텍처 |
+| **투자** | 펀딩 라운드, IPO/상장, M&A, 밸류에이션 |
+
+보조: 자사 · 정책규제 · 논문/오픈소스 · 효율화기술 · 기타산업
 
 ## 환경변수 (`.env`)
 
@@ -48,28 +66,16 @@ npm install
 npm run clip
 ```
 
-매일 자동 실행하려면 cron / GitHub Actions에 `npm run clip`을 등록하면 됩니다. 예) GitHub Actions:
+### 매일 자동 실행 (GitHub Actions)
 
-```yaml
-# .github/workflows/clip.yml
-on:
-  schedule:
-    - cron: "0 23 * * *"   # 매일 08:00 KST
-jobs:
-  clip:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with: { node-version: 22 }
-      - run: npm ci
-      - run: npm run clip
-        env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          NAVER_CLIENT_ID: ${{ secrets.NAVER_CLIENT_ID }}
-          NAVER_CLIENT_SECRET: ${{ secrets.NAVER_CLIENT_SECRET }}
-          NOTION_API_KEY: ${{ secrets.NOTION_API_KEY }}
-```
+`.github/workflows/clip.yml` 이 이미 포함되어 있습니다. **매일 08:00 KST** 자동 실행되며, 저장소 **Settings → Secrets and variables → Actions** 에 아래 시크릿만 등록하면 동작합니다:
+
+- `ANTHROPIC_API_KEY`
+- `NAVER_CLIENT_ID`, `NAVER_CLIENT_SECRET`
+- `NOTION_API_KEY`
+- `NOTION_DATABASE_ID` (선택)
+
+워크플로의 `workflow_dispatch` 로 GitHub Actions 탭에서 수동 실행도 가능합니다. 실행 주기는 `clip.yml` 의 `cron` 에서 조정합니다.
 
 ## Notion 저장 항목
 

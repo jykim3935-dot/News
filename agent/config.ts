@@ -13,25 +13,45 @@ export interface KeywordConfig {
 }
 
 export const KEYWORDS: KeywordConfig[] = [
-  // 산업/기술 키워드
-  { query: "반도체" },
+  // 산업 트렌드 / 기술 키워드 (폭넓게)
+  { query: "반도체 HBM" },
+  { query: "AI 반도체 NPU" },
   { query: "생성형 AI" },
-  { query: "AI 스타트업 투자" },
+  { query: "AI 에이전트" },
+  { query: "GPU 클라우드 데이터센터" },
+  { query: "AI 데이터센터 전력" },
+  { query: "LLM 거대언어모델" },
+  { query: "온디바이스 AI 경량화" },
 
-  // 관심 기업 (Notion "언급기업" 옵션과 매핑)
+  // 투자 동향
+  { query: "AI 스타트업 투자 유치" },
+  { query: "AI 기업 IPO 상장" },
+
+  // 경쟁사 / 관심 기업 (Notion "언급기업" 옵션과 매핑)
   { query: "노타 AI", company: "노타" },
   { query: "래블업", company: "래블업" },
   { query: "마키나락스", company: "마키나락스" },
   { query: "베슬AI", company: "베슬AI" },
   { query: "업스테이지 AI", company: "업스테이지" },
   { query: "사이오닉AI", company: "사이오닉AI" },
+  { query: "리벨리온 NPU", company: "리벨리온" },
+  { query: "퓨리오사AI", company: "퓨리오사AI" },
+];
+
+// 해외 기사 수집용 영문 검색어 (Claude web_search 수집기에서 사용)
+export const GLOBAL_QUERIES: string[] = [
+  "AI semiconductor HBM Nvidia latest news",
+  "GPU cloud neocloud CoreWeave Lambda latest",
+  "frontier AI model release OpenAI Anthropic Google latest",
+  "enterprise AI agent startup funding round latest",
+  "AI data center power investment latest",
 ];
 
 // 키워드당 네이버에서 가져올 기사 수 (최대 100)
-export const ARTICLES_PER_KEYWORD = 10;
+export const ARTICLES_PER_KEYWORD = 15;
 
-// 며칠 이내 기사만 대상으로 할지 (발행일 기준)
-export const MAX_AGE_DAYS = 2;
+// 며칠 이내 기사만 대상으로 할지 (발행일 기준). 최신성 우선 → 3일
+export const MAX_AGE_DAYS = 3;
 
 // ── Notion ────────────────────────────────────────────────────
 // "일일 뉴스클리핑" 데이터베이스 ID
@@ -71,12 +91,15 @@ export const DOMAIN_TO_MEDIA: Record<string, string> = {
 // Notion "중요도" 옵션
 export const IMPORTANCE_OPTIONS = ["★★★", "★★☆", "★☆☆"] as const;
 
-// Notion "카테고리" 멀티셀렉트 옵션
+// Notion "카테고리" 멀티셀렉트 옵션 (경쟁사·산업트렌드·기술지식·투자 중심)
 export const CATEGORY_OPTIONS = [
   "자사",
   "경쟁사",
-  "효율화기술",
+  "산업트렌드",
+  "기술지식",
+  "투자",
   "정책규제",
+  "효율화기술",
   "논문/오픈소스",
   "기타산업",
 ] as const;
